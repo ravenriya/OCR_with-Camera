@@ -1,0 +1,59 @@
+﻿<Window x:Class="CognexStyleApp.ReAuthWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Re-Authentication Required" 
+        Height="400" Width="450"
+        WindowStartupLocation="CenterScreen"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ResizeMode="NoResize"
+        Topmost="True">
+
+    <Border Background="White" CornerRadius="15" BorderBrush="#DC3545" BorderThickness="3">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="30" ShadowDepth="0" Color="#60000000"/>
+        </Border.Effect>
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="100"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="80"/>
+            </Grid.RowDefinitions>
+
+            <Border Grid.Row="0" Background="#DC3545" CornerRadius="15,15,0,0">
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="⏰" FontSize="35" HorizontalAlignment="Center"/>
+                    <TextBlock Text="Re-Authentication Required" FontSize="16" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center"/>
+                    <TextBlock Text="Time to verify" FontSize="11" Foreground="#FFE0E0" HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                </StackPanel>
+            </Border>
+
+            <StackPanel Grid.Row="1" Margin="40,30">
+                <TextBlock x:Name="txtUsername" Text="Username: " FontSize="13" Foreground="#555" FontWeight="SemiBold" Margin="0,0,0,15"/>
+                <TextBlock Text="Enter your password" FontSize="12" Foreground="#555" Margin="0,0,0,8"/>
+                <Grid>
+                    <Border BorderBrush="#CCC" BorderThickness="2" CornerRadius="5">
+                        <Grid>
+                            <PasswordBox x:Name="txtPassword" Height="45" FontSize="15" Padding="12,12,45,12" BorderThickness="0" KeyDown="TxtPassword_KeyDown"/>
+                            <TextBox x:Name="txtPasswordVisible" Height="45" FontSize="15" Padding="12,12,45,12" BorderThickness="0" Visibility="Collapsed" KeyDown="TxtPassword_KeyDown"/>
+                            <Button Content="👁" Width="35" Height="35" HorizontalAlignment="Right" Margin="5" Background="Transparent" BorderThickness="0" FontSize="14" Click="TogglePassword_Click" Cursor="Hand"/>
+                        </Grid>
+                    </Border>
+                </Grid>
+                <TextBlock x:Name="txtError" Text="" Foreground="Red" FontSize="12" Margin="0,12,0,0" TextWrapping="Wrap" FontWeight="SemiBold"/>
+            </StackPanel>
+
+            <Grid Grid.Row="2" Margin="40,0,40,20">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition/>
+                    <ColumnDefinition Width="10"/>
+                    <ColumnDefinition/>
+                </Grid.ColumnDefinitions>
+                <Button Content="AUTHENTICATE" Height="50" Background="#28A745" Foreground="White" FontSize="14" FontWeight="Bold" BorderThickness="0" Click="BtnAuthenticate_Click" Cursor="Hand"/>
+                <Button Grid.Column="2" Content="LOGOUT" Height="50" Background="#6C757D" Foreground="White" FontSize="14" FontWeight="Bold" BorderThickness="0" Click="BtnLogout_Click" Cursor="Hand"/>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>
