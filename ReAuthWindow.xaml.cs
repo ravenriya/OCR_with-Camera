@@ -1,27 +1,61 @@
-﻿using System;
+﻿using PixtechApplication;
+using System;
 using System.Windows;
 using System.Windows.Input;
 
-namespace CognexStyleApp
+namespace PixtechApplication
 {
     public partial class ReAuthWindow : Window
     {
         public bool IsAuthenticated { get; private set; }
         private string username;
-        private bool passwordVisible = false;
 
-        public ReAuthWindow(string currentUser)
+        public ReAuthWindow(string user)
         {
             InitializeComponent();
-            username = currentUser;
+            username = user;
             txtUsername.Text = $"Username: {username}";
-            txtPassword.Focus();
+        }
+
+        private void BtnAuthenticate_Click(object sender, RoutedEventArgs e)
+        {
+            Authenticate();
+        }
+
+        private void TxtPassword_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter) Authenticate();
+        }
+
+        private void Authenticate()
+        {
+            string password = txtPassword.Visibility == Visibility.Visible
+                ? txtPassword.Password
+                : txtPasswordVisible.Text;
+
+            if (string.IsNullOrEmpty(password))
+            {
+                txtError.Text = "❌ Please enter password";
+                return;
+            }
+
+            if (AuthenticationService.ValidateUser(username, password))
+            {
+                IsAuthenticated = true;
+                DialogResult = true;
+                Close();
+            }
+            else
+            {
+                txtError.Text = "❌ Invalid password!";
+                txtPassword.Clear();
+                txtPasswordVisible.Clear();
+            }
         }
 
         private void TogglePassword_Click(object sender, RoutedEventArgs e)
         {
-            passwordVisible = !passwordVisible;
-            if (passwordVisible)
+            if (txtPassword.Visibility == Visibility.Visible)
             {
                 txtPasswordVisible.Text = txtPassword.Password;
                 txtPassword.Visibility = Visibility.Collapsed;
@@ -33,32 +67,6 @@ namespace CognexStyleApp
                 txtPassword.Password = txtPasswordVisible.Text;
                 txtPasswordVisible.Visibility = Visibility.Collapsed;
                 txtPassword.Visibility = Visibility.Visible;
-                txtPassword.Focus();
-            }
-        }
-
-        private void BtnAuthenticate_Click(object sender, RoutedEventArgs e) { Authenticate(); }
-        private void TxtPassword_KeyDown(object sender, KeyEventArgs e) { if (e.Key == Key.Enter) Authenticate(); }
-
-        private void Authenticate()
-        {
-            string password = passwordVisible ? txtPasswordVisible.Text : txtPassword.Password;
-            if (string.IsNullOrEmpty(password))
-            {
-                txtError.Text = "❌ Please enter your password";
-                return;
-            }
-            if (AuthenticationService.ValidateUser(username, password))
-            {
-                IsAuthenticated = true;
-                DialogResult = true;
-                Close();
-            }
-            else
-            {
-                txtError.Text = "❌ Incorrect password!";
-                if (passwordVisible) txtPasswordVisible.Clear();
-                else txtPassword.Clear();
                 txtPassword.Focus();
             }
         }

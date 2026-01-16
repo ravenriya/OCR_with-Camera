@@ -1,36 +1,23 @@
-﻿using System;
+﻿using PixtechApplication;
 using System.Windows;
 
-namespace CognexStyleApp
+namespace PixtechApplication
 {
     public partial class App : Application
     {
-        private MainWindow mainWindow;
-
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
 
-            // Show login window
-            LoginWindow loginWindow = new LoginWindow();
-            loginWindow.ShowDialog();
-
-            // Check authentication
-            if (loginWindow.IsAuthenticated)
+            var loginWindow = new LoginWindow();
+            if (loginWindow.ShowDialog() == true && loginWindow.IsAuthenticated)
             {
-                // Create main window INSIDE Application.Run context
-                mainWindow = new MainWindow(loginWindow.AuthenticatedUser);
-
-                // Set as main window
-                this.MainWindow = mainWindow;
-
-                // Show it
+                var mainWindow = new MainWindow(loginWindow.AuthenticatedUser);
                 mainWindow.Show();
             }
             else
             {
-                // Exit
-                this.Shutdown();
+                Shutdown();
             }
         }
     }

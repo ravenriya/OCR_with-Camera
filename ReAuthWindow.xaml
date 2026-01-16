@@ -1,4 +1,4 @@
-﻿<Window x:Class="CognexStyleApp.ReAuthWindow"
+﻿<Window x:Class="PixtechApplication.ReAuthWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Re-Authentication Required" 
@@ -9,27 +9,27 @@
         Background="Transparent"
         ResizeMode="NoResize"
         Topmost="True">
-
+    
     <Border Background="White" CornerRadius="15" BorderBrush="#DC3545" BorderThickness="3">
         <Border.Effect>
             <DropShadowEffect BlurRadius="30" ShadowDepth="0" Color="#60000000"/>
         </Border.Effect>
-
+        
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="100"/>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="80"/>
             </Grid.RowDefinitions>
-
+            
             <Border Grid.Row="0" Background="#DC3545" CornerRadius="15,15,0,0">
                 <StackPanel VerticalAlignment="Center">
-                    <TextBlock Text="⏰" FontSize="35" HorizontalAlignment="Center"/>
+                    
                     <TextBlock Text="Re-Authentication Required" FontSize="16" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center"/>
-                    <TextBlock Text="Time to verify" FontSize="11" Foreground="#FFE0E0" HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                   
                 </StackPanel>
             </Border>
-
+            
             <StackPanel Grid.Row="1" Margin="40,30">
                 <TextBlock x:Name="txtUsername" Text="Username: " FontSize="13" Foreground="#555" FontWeight="SemiBold" Margin="0,0,0,15"/>
                 <TextBlock Text="Enter your password" FontSize="12" Foreground="#555" Margin="0,0,0,8"/>
@@ -44,7 +44,7 @@
                 </Grid>
                 <TextBlock x:Name="txtError" Text="" Foreground="Red" FontSize="12" Margin="0,12,0,0" TextWrapping="Wrap" FontWeight="SemiBold"/>
             </StackPanel>
-
+            
             <Grid Grid.Row="2" Margin="40,0,40,20">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition/>

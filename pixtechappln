@@ -1,0 +1,8 @@
+{
+  "solution": {
+    "path": "PixtechApplication.slnx",
+    "projects": [
+      "PixtechApplication.csproj"
+    ]
+  }
+}

@@ -9,7 +9,7 @@ using Microsoft.Win32;
 using System.IO;
 using System.Threading.Tasks;
 
-namespace CognexStyleApp
+namespace PixtechApplication
 {
     public partial class MainWindow : Window
     {
@@ -20,7 +20,7 @@ namespace CognexStyleApp
         private string currentUser;
         private DispatcherTimer authTimer;
         private DateTime lastAuthTime;
-        private const int AUTH_TIMEOUT_MINUTES = 1;
+        private const int AUTH_TIMEOUT_MINUTES = 20;
 
         public MainWindow() : this("Guest") { }
 
@@ -106,17 +106,18 @@ namespace CognexStyleApp
             if (imageFiles.Count == 0) { MessageBox.Show("Load images!"); return; }
             btnTrain.IsEnabled = false;
             btnTrain.Content = "Training...";
-            for (int i = 1; i <= 50; i++)
+
+            for (int i = 1; i <= 100; i++)
             {
-                progressBar.Value = i * 2;
-                txtEpoch.Text = $"Epoch: {i}/50";
-                await Task.Delay(100);
+                progressBar.Value = i;
+                await Task.Delay(50);
             }
+
             btnTrain.IsEnabled = true;
             btnTrain.Content = "TRAIN";
             isModelTrained = true;
             ShowResults();
-            MessageBox.Show("Complete!");
+            MessageBox.Show("Training Complete!");
         }
 
         private void ShowResults()

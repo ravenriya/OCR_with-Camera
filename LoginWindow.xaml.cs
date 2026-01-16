@@ -1,26 +1,23 @@
-﻿using System;
+﻿using PixtechApplication;
+using System;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 
-namespace CognexStyleApp
+namespace PixtechApplication
 {
     public partial class LoginWindow : Window
     {
         public bool IsAuthenticated { get; private set; }
         public string AuthenticatedUser { get; private set; }
 
+        private const int LOCKOUT_MINUTES = 5;
+
         public LoginWindow()
         {
             InitializeComponent();
-            txtLoginUsername.Focus();
-        }
-
-        private void TxtSignupPassword_Changed(object sender, System.Windows.RoutedEventArgs e)
-        {
-            string password = txtSignupPassword.Password;
-            UpdatePasswordStrength(password);
+            txtSignupPassword.PasswordChanged += (s, e) => UpdatePasswordStrength(txtSignupPassword.Password);
         }
 
         private void UpdatePasswordStrength(string password)
@@ -85,6 +82,13 @@ namespace CognexStyleApp
                 return;
             }
 
+            if (AuthenticationService.IsAccountLocked(username))
+            {
+                TimeSpan remaining = AuthenticationService.GetLockoutTimeRemaining(username);
+                txtLoginError.Text = $"🔒 Account locked!\n\nToo many failed attempts.\nTry again in {remaining.Minutes}m {remaining.Seconds}s";
+                return;
+            }
+
             if (AuthenticationService.ValidateUser(username, password))
             {
                 IsAuthenticated = true;
@@ -94,8 +98,20 @@ namespace CognexStyleApp
             }
             else
             {
-                txtLoginError.Text = "❌ Invalid username or password!";
+                int remaining = AuthenticationService.GetRemainingAttempts(username);
+
+                if (remaining > 0)
+                {
+                    txtLoginError.Text = $"❌ Invalid password!\n\n⚠️ {remaining} attempt(s) remaining before lockout";
+                }
+                else
+                {
+                    TimeSpan lockoutTime = AuthenticationService.GetLockoutTimeRemaining(username);
+                    txtLoginError.Text = $"🔒 Account locked for {LOCKOUT_MINUTES} minutes!\n\nToo many failed attempts.\nTry again at {DateTime.Now.AddMinutes(LOCKOUT_MINUTES):HH:mm}";
+                }
+
                 txtLoginPassword.Clear();
+                txtLoginPassword.Focus();
             }
         }
 

@@ -1,4 +1,4 @@
-﻿<Window x:Class="CognexStyleApp.MainWindow"
+﻿<Window x:Class="PixtechApplication.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="PixTech Deep Learning" 
@@ -81,14 +81,8 @@
                 <StackPanel>
                     <TextBlock Text="TRAINING" FontWeight="Bold" FontSize="14"/>
                     <TextBlock x:Name="txtStatus" Text="Ready" Margin="0,10"/>
-                    <ComboBox x:Name="cmbEpochs" Height="32" Margin="0,10" SelectedIndex="1">
-                        <ComboBoxItem Content="10"/>
-                        <ComboBoxItem Content="50"/>
-                        <ComboBoxItem Content="100"/>
-                    </ComboBox>
                     <Button x:Name="btnTrain" Content="TRAIN" Height="45" Margin="0,15" Background="#28A745" Foreground="White" Click="Train_Click"/>
                     <ProgressBar x:Name="progressBar" Height="25" Value="0" Margin="0,10"/>
-                    <TextBlock x:Name="txtEpoch" Text="Epoch: 0/50" FontSize="10"/>
                     <Button x:Name="btnSaveModel" Content="Save" Height="35" Margin="0,15,0,5" Click="SaveModel_Click"/>
                     <Button x:Name="btnLoadModel" Content="Load" Height="35" Click="LoadModel_Click"/>
                     <TextBlock Text="RESULTS" FontWeight="Bold" Margin="0,20,0,10"/>
