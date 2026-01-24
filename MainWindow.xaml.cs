@@ -8,6 +8,8 @@ using System.Windows.Threading;
 using Microsoft.Win32;
 using System.IO;
 using System.Threading.Tasks;
+using System.Diagnostics;
+using System.Linq;
 
 namespace PixtechApplication
 {
@@ -36,6 +38,129 @@ namespace PixtechApplication
             MessageBox.Show($"✅ Welcome, {currentUser}!", "PixTech");
             if (txtStatusBar != null)
                 txtStatusBar.Text = $"User: {currentUser}";
+        }
+
+        private async Task<string> PerformEasyOCR(string imagePath)
+        {
+            return await Task.Run(() =>
+            {
+                try
+                {
+                    string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+                    string scriptPath = Path.Combine(baseDir, "easyocr_service.py");
+
+                    // Debug: Check if file exists
+                    if (!File.Exists(scriptPath))
+                    {
+                        // Try alternate locations
+                        string[] possiblePaths = {
+                            Path.Combine(baseDir, "easyocr_simple.py"),
+                            Path.Combine(Directory.GetCurrentDirectory(), "easyocr_service.py"),
+                            "easyocr_service.py"
+                        };
+
+                        string foundPath = null;
+                        foreach (var path in possiblePaths)
+                        {
+                            if (File.Exists(path))
+                            {
+                                foundPath = path;
+                                break;
+                            }
+                        }
+
+                        if (foundPath == null)
+                        {
+                            return $"❌ Python script NOT FOUND!\n\n" +
+                                   $"Searched locations:\n" +
+                                   $"1. {possiblePaths[0]}\n" +
+                                   $"2. {possiblePaths[1]}\n" +
+                                   $"3. Current directory\n\n" +
+                                   $"Please make sure easyocr_service.py is in your bin\\Debug folder!\n\n" +
+                                   $"Current directory: {baseDir}";
+                        }
+
+                        scriptPath = foundPath;
+                    }
+
+                    var startInfo = new ProcessStartInfo
+                    {
+                        FileName = "python",
+                        Arguments = $"\"{scriptPath}\" \"{imagePath}\"",
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        UseShellExecute = false,
+                        CreateNoWindow = true,
+                        WorkingDirectory = baseDir
+                    };
+
+                    using (var process = Process.Start(startInfo))
+                    {
+                        if (process == null)
+                        {
+                            return "❌ Could not start Python!\n\nMake sure Python is installed.";
+                        }
+
+                        string output = process.StandardOutput.ReadToEnd();
+                        string error = process.StandardError.ReadToEnd();
+                        process.WaitForExit();
+
+                        // Check for errors
+                        if (process.ExitCode != 0)
+                        {
+                            return $"❌ Python Error:\n{error}\n\nOutput:\n{output}";
+                        }
+
+                        if (!string.IsNullOrEmpty(error))
+                        {
+                            return $"❌ Python Error:\n{error}";
+                        }
+
+                        // No output means no text detected
+                        if (string.IsNullOrWhiteSpace(output))
+                        {
+                            return "ℹ️ No text detected in the image.";
+                        }
+
+                        // Parse and format the output
+                        var lines = output.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+                        var result = "✅ === OCR RESULTS ===\n\n";
+                        int count = 1;
+                        double totalConf = 0;
+
+                        foreach (var line in lines)
+                        {
+                            var parts = line.Split('|');
+                            if (parts.Length == 2)
+                            {
+                                string text = parts[0].Trim();
+                                string confidence = parts[1].Trim();
+                                result += $"📝 Text #{count}: {text}\n";
+                                result += $"   🎯 Confidence: {confidence}%\n\n";
+
+                                if (double.TryParse(confidence, out double conf))
+                                {
+                                    totalConf += conf;
+                                }
+                                count++;
+                            }
+                        }
+
+                        if (count > 1)
+                        {
+                            double avgConf = totalConf / (count - 1);
+                            result += $"📊 Average Confidence: {avgConf:F2}%\n";
+                            result += $"📋 Total Detections: {count - 1}";
+                        }
+
+                        return result;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    return $"❌ Exception: {ex.Message}\n\nStack:\n{ex.StackTrace}";
+                }
+            });
         }
 
         private void AuthTimer_Tick(object sender, EventArgs e)
@@ -103,21 +228,66 @@ namespace PixtechApplication
 
         private async void Train_Click(object sender, RoutedEventArgs e)
         {
-            if (imageFiles.Count == 0) { MessageBox.Show("Load images!"); return; }
-            btnTrain.IsEnabled = false;
-            btnTrain.Content = "Training...";
-
-            for (int i = 1; i <= 100; i++)
+            if (imageFiles.Count == 0)
             {
-                progressBar.Value = i;
-                await Task.Delay(50);
+                MessageBox.Show("⚠️ Please load images first!", "No Images", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            btnTrain.IsEnabled = false;
+            btnTrain.Content = "Processing...";
+            progressBar.Value = 0;
+
+            if (currentTool == "OCR")
+            {
+                string currentImagePath = null;
+                if (lstImages.SelectedItem is ListBoxItem item && item.Tag is string path)
+                    currentImagePath = path;
+                else
+                    currentImagePath = imageFiles[0];
+
+                txtResult.Text = "🔍 Running EasyOCR...\n\nPlease wait...";
+                txtConfidence.Text = "⏳ Processing...";
+                txtDecision.Text = "WORKING";
+                txtDecision.Foreground = System.Windows.Media.Brushes.Orange;
+
+                for (int i = 1; i <= 30; i++)
+                {
+                    progressBar.Value = i;
+                    await Task.Delay(10);
+                }
+
+                var ocrResult = await PerformEasyOCR(currentImagePath);
+
+                progressBar.Value = 100;
+                txtResult.Text = ocrResult;
+
+                if (ocrResult.StartsWith("✅"))
+                {
+                    txtConfidence.Text = "✅ OCR Complete";
+                    txtDecision.Text = "SUCCESS";
+                    txtDecision.Foreground = System.Windows.Media.Brushes.Green;
+                }
+                else
+                {
+                    txtConfidence.Text = "❌ OCR Failed";
+                    txtDecision.Text = "ERROR";
+                    txtDecision.Foreground = System.Windows.Media.Brushes.Red;
+                }
+            }
+            else
+            {
+                for (int i = 1; i <= 100; i++)
+                {
+                    progressBar.Value = i;
+                    await Task.Delay(50);
+                }
+                ShowResults();
             }
 
             btnTrain.IsEnabled = true;
             btnTrain.Content = "TRAIN";
             isModelTrained = true;
-            ShowResults();
-            MessageBox.Show("Training Complete!");
         }
 
         private void ShowResults()
@@ -125,7 +295,7 @@ namespace PixtechApplication
             txtResult.Text = GenerateOCR();
             txtConfidence.Text = $"Confidence: {random.Next(85, 99)}%";
             txtDecision.Text = "PASS";
-            txtDecision.Foreground = Brushes.Green;
+            txtDecision.Foreground = System.Windows.Media.Brushes.Green;
         }
 
         private string GenerateOCR()
