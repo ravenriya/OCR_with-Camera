@@ -14,4 +14,11 @@
     <PackageReference Include="pythonnet" Version="3.0.5" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="bin\Debug\net10.0-windows\Convert_to_text_annotations.py" />
+    <None Include="bin\Debug\net10.0-windows\Crnn_inference.py" />
+    <None Include="bin\Debug\net10.0-windows\Crnn_model.py" />
+    <None Include="bin\Debug\net10.0-windows\Train_text_ocr.py" />
+  </ItemGroup>
+
 </Project>
