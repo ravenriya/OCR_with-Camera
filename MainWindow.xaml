@@ -41,7 +41,19 @@
                                 Background="#0078D4" Foreground="White" FontWeight="Bold" Click="LoadFiles_Click"/>
                     <Button x:Name="btnLoadFolder" Content="📂 Load Folder" Width="150" Height="40" Margin="5" 
                                 Background="#0078D4" Foreground="White" FontWeight="Bold" Click="LoadFolder_Click"/>
+                    <!-- Add this button in your Training Mode panel, after the existing "Annotate" button -->
 
+                    <Button x:Name="btnAutoDetect"
+        Content="🤖 Auto-Detect Characters (CRAFT)"
+        Width="220"
+        Height="40"
+        Margin="5"
+        Background="#FF2196F3"
+        Foreground="White"
+        FontWeight="Bold"
+        FontSize="14"
+        Click="AutoDetectCharacters_Click"
+        ToolTip="Automatically detect character regions using CRAFT AI"/>
                     <TextBlock Text="Tool:" VerticalAlignment="Center" Margin="20,0,10,0" FontWeight="Bold"/>
                     <ComboBox x:Name="cmbToolType" Width="200" Height="35" Margin="5" SelectionChanged="ToolType_SelectionChanged">
                         <ComboBoxItem Content="OCR" IsSelected="True"/>
@@ -69,15 +81,15 @@
 
                 <!-- Training Mode Buttons -->
                 <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="5,10">
-                    <Button x:Name="btnAnnotate" Content="✏️ Annotate Images" Width="180" Height="40" 
+                    <Button x:Name="btnAnnotate" Content="✏️ Annotate Images" Width="150" Height="40" 
                                 Margin="5,0" Background="#17A2B8" Foreground="White" FontWeight="Bold"
-                                Click="Annotate_Click" IsEnabled="False"/>
-                    <Button x:Name="btnStartTraining" Content="🚀 Start Training" Width="180" Height="40" 
+                                Click="Annotate_Click" IsEnabled="False" Visibility="Collapsed"/>
+                    <Button x:Name="btnStartTraining" Content="🚀 Start Training" Width="150" Height="40" 
                                 Margin="5,0" Background="#28A745" Foreground="White" FontWeight="Bold"
-                                Click="StartTraining_Click" IsEnabled="False"/>
-                    <Button x:Name="btnCheckAnnotations" Content="📊 Check Annotations" Width="180" Height="40" 
+                                Click="StartTraining_Click" IsEnabled="False" Visibility="Collapsed"/>
+                    <Button x:Name="btnCheckAnnotations" Content="📊 Check Annotations" Width="150" Height="40" 
                                 Margin="5,0" Background="#6C757D" Foreground="White" FontWeight="Bold"
-                                Click="CheckAnnotations_Click"/>
+                                Click="CheckAnnotations_Click" Visibility="Collapsed"/>
                 </StackPanel>
             </Grid>
         </Border>
@@ -102,7 +114,6 @@
                 </Grid>
             </Border>
 
-            <!-- Image Display -->
             <!-- Image Display with Annotation Overlay -->
             <Border Grid.Column="1" Background="White" Padding="15" Margin="5,0" BorderBrush="#DDD" BorderThickness="1">
                 <Grid>
@@ -151,7 +162,7 @@
                         <!-- Inference Panel -->
                         <StackPanel x:Name="pnlInference">
                             <TextBlock Text="🔍 INFERENCE" FontWeight="Bold" FontSize="14"/>
-                            <TextBlock x:Name="txtStatus" Text="Using EasyOCR pretrained model..." Margin="0,10" FontSize="11" Foreground="#666" TextWrapping="Wrap"/>
+                            <TextBlock x:Name="txtStatus" Text="Using ImprovedCharacterCNN (PyTorch custom model)..." Margin="0,10" FontSize="11" Foreground="#666" TextWrapping="Wrap"/>
                             <Button x:Name="btnRunInference" Content="▶️ RUN INFERENCE" Height="45" Margin="0,10" 
                                         Background="#28A745" Foreground="White" FontWeight="Bold" Click="RunInference_Click"/>
                             <ProgressBar x:Name="progressBar" Height="25" Value="0" Margin="0,10"/>
@@ -190,18 +201,18 @@
                         <StackPanel x:Name="pnlTraining" Visibility="Collapsed">
                             <TextBlock Text="🎓 TRAINING SETUP" FontWeight="Bold" FontSize="14"/>
 
-                            <!-- Annotation Status (IMPROVED) -->
+                            <!-- Annotation Status -->
                             <TextBlock Text="Annotation Status:" Margin="0,15,0,5" FontWeight="Bold" FontSize="12"/>
                             <Border Background="#FFF3CD" Padding="12" BorderBrush="#FFC107" BorderThickness="2" CornerRadius="5" Margin="0,5,0,10">
-                                <StackPanel>
-                                    <TextBlock x:Name="txtAnnotationStatus" 
-                                                   Text="❌ No annotations found&#x0a;Please annotate images first" 
-                                                   FontSize="12" 
-                                                   Foreground="#856404" 
-                                                   TextWrapping="Wrap"
-                                                   LineHeight="18"/>
-                                </StackPanel>
+                                <TextBlock x:Name="txtAnnotationStatus" 
+                                           Text="❌ No annotations" 
+                                           FontSize="12" 
+                                           Foreground="#856404" 
+                                           TextWrapping="Wrap"
+                                           LineHeight="18"/>
                             </Border>
+
+                            <!-- BIG START TRAINING BUTTON -->
                             <Button x:Name="btnStartTrainingBig" 
                                       Content="🚀 START TRAINING NOW" 
                                       Height="60" 
@@ -211,38 +222,55 @@
                                       FontSize="16"
                                       Margin="0,10,0,15"
                                       Click="StartTraining_Click"
-                                      IsEnabled="False"
-                                      ToolTip="Click to start training your custom OCR model"/>   
+                                      IsEnabled="False"/>
 
                             <!-- Quick Action Buttons -->
-                            <Grid Margin="0,5,0,15">
+                            <Grid Margin="0,5,0,10">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
 
                                 <Button Content="✏️ Annotate" 
-                                            Height="40" 
-                                            Background="#17A2B8" 
-                                            Foreground="White" 
-                                            FontWeight="Bold"
-                                            Click="Annotate_Click"
-                                            IsEnabled="{Binding ElementName=btnAnnotate, Path=IsEnabled}"
-                                            Margin="0,0,5,0"
-                                            ToolTip="Open annotation tool to label characters"/>
+                                        Height="40" 
+                                        Background="#17A2B8" 
+                                        Foreground="White" 
+                                        FontWeight="Bold"
+                                        Click="Annotate_Click"
+                                        Margin="0,0,5,0"/>
 
                                 <Button Grid.Column="1" 
-                                            Content="🔄 Refresh" 
-                                            Height="40" 
-                                            Background="#6C757D" 
-                                            Foreground="White" 
-                                            FontWeight="Bold"
-                                            Click="CheckAnnotations_Click"
-                                            Margin="5,0,0,0"
-                                            ToolTip="Check annotation status"/>
+                                        Content="🔄 Refresh" 
+                                        Height="40" 
+                                        Background="#6C757D" 
+                                        Foreground="White" 
+                                        FontWeight="Bold"
+                                        Click="CheckAnnotations_Click"
+                                        Margin="5,0,0,0"/>
                             </Grid>
 
-                            <Separator Margin="0,5,0,15"/>
+                            <!-- ANNOTATION MANAGEMENT BUTTONS -->
+                            <TextBlock Text="🔧 Annotation Tools:" FontWeight="Bold" Margin="0,10,0,5" FontSize="12"/>
+                            <Button Content="🔧 Fix Mixed Annotations" 
+                                    Background="#FF9800" Foreground="White" FontWeight="Bold"
+                                    Height="40" Margin="0,0,0,5" 
+                                    Click="SeparateAnnotations_Click"
+                                    ToolTip="Separate annotations that got mixed between images"/>
+
+                            <Button Content="🗑️ Clear CURRENT Image Only" 
+                                    Background="#FFC107" Foreground="Black" FontWeight="Bold"
+                                    Height="40" Margin="0,0,0,5" 
+                                    Click="ClearCurrentImageAnnotations_Click"
+                                    ToolTip="Delete annotations for the current image only"/>
+
+                            <Button Content="🗑️ Clear ALL Annotations" 
+                                    Background="#DC3545" Foreground="White" FontWeight="Bold"
+                                    Height="40" Margin="0,0,0,10" 
+                                    Click="ClearAllAnnotations_Click"
+                                    ToolTip="Delete ALL annotations from ALL images"/>
+                            
+
+                            <Separator Margin="0,10,0,15"/>
 
                             <!-- Training Parameters -->
                             <TextBlock Text="Training Parameters:" Margin="0,5,0,10" FontWeight="Bold" FontSize="12"/>
@@ -260,18 +288,15 @@
 
                                     <TextBlock Text="Epochs:" VerticalAlignment="Center" Margin="0,5" FontSize="11"/>
                                     <TextBox x:Name="txtEpochs" Grid.Column="1" Text="50" Height="28" 
-                                                 Margin="5" VerticalContentAlignment="Center" FontSize="11"
-                                                 ToolTip="Number of training iterations"/>
+                                                 Margin="5" VerticalContentAlignment="Center" FontSize="11"/>
 
                                     <TextBlock Grid.Row="1" Text="Batch Size:" VerticalAlignment="Center" Margin="0,5" FontSize="11"/>
                                     <TextBox x:Name="txtBatchSize" Grid.Row="1" Grid.Column="1" Text="32" Height="28" 
-                                                 Margin="5" VerticalContentAlignment="Center" FontSize="11"
-                                                 ToolTip="Number of samples per batch"/>
+                                                 Margin="5" VerticalContentAlignment="Center" FontSize="11"/>
 
                                     <TextBlock Grid.Row="2" Text="Learn Rate:" VerticalAlignment="Center" Margin="0,5" FontSize="11"/>
                                     <TextBox x:Name="txtLearningRate" Grid.Row="2" Grid.Column="1" Text="0.001" Height="28" 
-                                                 Margin="5" VerticalContentAlignment="Center" FontSize="11"
-                                                 ToolTip="Learning rate for optimizer"/>
+                                                 Margin="5" VerticalContentAlignment="Center" FontSize="11"/>
                                 </Grid>
                             </Border>
 
@@ -279,31 +304,6 @@
                             <ProgressBar x:Name="progressBarTraining" Height="20" Value="0" Margin="0,15,0,5"/>
                             <TextBlock x:Name="txtTrainingStatus" Text="Ready to train..." FontSize="10" 
                                            Foreground="#666" Margin="0,0,0,10" TextWrapping="Wrap" TextAlignment="Center"/>
-
-                            <Separator Margin="0,10,0,15"/>
-
-                            <!-- Training Results -->
-                            <TextBlock Text="📈 TRAINING RESULTS" FontWeight="Bold" Margin="0,5,0,10" FontSize="12"/>
-                            <Border Background="#E8F5E9" Padding="12" BorderBrush="#4CAF50" BorderThickness="2" CornerRadius="5">
-                                <StackPanel>
-                                    <TextBlock x:Name="txtTrainingAccuracy" Text="Training Acc: ---" 
-                                                   FontSize="11" Margin="0,2"/>
-                                    <TextBlock x:Name="txtValidationAccuracy" Text="Validation Acc: ---" 
-                                                   FontSize="11" Margin="0,2"/>
-                                    <Separator Margin="0,5"/>
-                                    <TextBlock x:Name="txtBestAccuracy" Text="Best Acc: ---" 
-                                                   FontSize="12" Margin="0,5,0,0" FontWeight="Bold" Foreground="#2E7D32"/>
-                                </StackPanel>
-                            </Border>
-
-                            <Separator Margin="0,15"/>
-
-                            <!-- Model Management -->
-                            <TextBlock Text="💾 MODEL MANAGEMENT" FontWeight="Bold" Margin="0,10,0,10" FontSize="12"/>
-                            <Button x:Name="btnSaveTrainedModel" Content="💾 Save Trained Model" Height="35" Margin="0,5" 
-                                        Click="SaveModel_Click" Background="#007BFF" Foreground="White" FontWeight="Bold"/>
-                            <Button x:Name="btnLoadTrainedModel" Content="📂 Load Existing Model" Height="35" Margin="0,5" 
-                                        Click="LoadModel_Click" Background="#6C757D" Foreground="White" FontWeight="Bold"/>
                         </StackPanel>
                     </StackPanel>
                 </ScrollViewer>
