@@ -22,51 +22,57 @@ namespace PixtechApplication
         private List<string> imageFiles = new List<string>();
         private int currentImageIndex = 0;
         private string currentTool = "OCR";
-        private Random random = new Random();
-        private bool isModelTrained = false;
         private string currentUser;
         private DispatcherTimer authTimer;
-        private DateTime lastAuthTime;
         private const int AUTH_TIMEOUT_MINUTES = 20;
         private bool isTrainingMode = false;
 
-        // CHANGE THIS LINE TO SWITCH PROJECTS
         private string currentProjectName = "DefaultProject";
-
         private string annotationsFolder;
         private string modelsFolder;
         private string currentProjectFolder;
         private const string PROJECTS_BASE_DIR = "Projects";
-
-        private bool isAnnotationMode = false;
-        private Point annotationStartPoint;
-        private Rectangle currentAnnotationRect;
-        private List<AnnotationData> currentImageAnnotations = new List<AnnotationData>();
         private const int LABEL_OFFSET = 2;
 
-        public MainWindow() : this("Guest") { }
+        private List<AnnotationData> currentImageAnnotations = new List<AnnotationData>();
 
+        // ── Template: resize-only cyan box ──────────────────────────────
+        private double templateWidth = 50;
+        private double templateHeight = 50;
+        private double tplLeft = 10, tplTop = 40;
+        private Rectangle tplRect;
+        private Rectangle tplHandleBR, tplHandleR, tplHandleB;
+        private TextBlock tplLabel;
+
+        // Template drag state
+        private bool isDraggingTpl = false;
+        private bool isResizingTpl = false;
+        private string resizeDir = "";
+        private Point dragStart;
+        private double dragStartW, dragStartH, dragStartL, dragStartT;
+
+        // ── Stamp drag state ─────────────────────────────────────────────
+        private bool isStamping = false;
+        private Rectangle stampPreview = null;
+
+        // ── Per-annotation rotation state ───────────────────────────────
+        private AnnotationData rotatingAnn = null;
+        private Point rotDragStart;
+        private double rotStartAngle;
+
+        public MainWindow() : this("Guest") { }
         public MainWindow(string username)
         {
             InitializeComponent();
             currentUser = username;
-            lastAuthTime = DateTime.Now;
-
             string baseDir = AppDomain.CurrentDomain.BaseDirectory;
             Directory.CreateDirectory(IOPath.Combine(baseDir, PROJECTS_BASE_DIR));
-
-            authTimer = new DispatcherTimer();
-            authTimer.Interval = TimeSpan.FromMinutes(AUTH_TIMEOUT_MINUTES);
+            authTimer = new DispatcherTimer { Interval = TimeSpan.FromMinutes(AUTH_TIMEOUT_MINUTES) };
             authTimer.Tick += AuthTimer_Tick;
             authTimer.Start();
-
             MessageBox.Show($"Welcome {currentUser}!\n\nCurrent Project: {currentProjectName}", "PixTech");
-
             SetupProjectFolders();
-
-            if (txtStatusBar != null)
-                txtStatusBar.Text = $"User: {currentUser} | Project: {currentProjectName}";
-
+            if (txtStatusBar != null) txtStatusBar.Text = $"User: {currentUser} | Project: {currentProjectName}";
             UpdateAnnotationStatus();
         }
 
@@ -76,18 +82,20 @@ namespace PixtechApplication
             currentProjectFolder = IOPath.Combine(baseDir, PROJECTS_BASE_DIR, currentProjectName);
             annotationsFolder = IOPath.Combine(currentProjectFolder, "Annotations");
             modelsFolder = IOPath.Combine(baseDir, "Models");
-
             Directory.CreateDirectory(currentProjectFolder);
             Directory.CreateDirectory(annotationsFolder);
             Directory.CreateDirectory(modelsFolder);
             Directory.CreateDirectory(IOPath.Combine(annotationsFolder, "images"));
         }
 
+        // ════════════════════════════════════════════════════════════════
+        // MODE SWITCH
+        // ════════════════════════════════════════════════════════════════
+
         private void ModeChanged(object sender, RoutedEventArgs e)
         {
             if (rbTrainingMode == null || rbInferenceMode == null) return;
             isTrainingMode = rbTrainingMode.IsChecked == true;
-
             if (isTrainingMode)
             {
                 txtMode.Text = "TRAINING MODE";
@@ -98,14 +106,13 @@ namespace PixtechApplication
                 btnStartTraining.Visibility = Visibility.Visible;
                 btnCheckAnnotations.Visibility = Visibility.Visible;
                 btnAnnotate.IsEnabled = imageFiles.Count > 0;
-
                 if (imgDisplay.Source != null)
                 {
                     annotationCanvas.Visibility = Visibility.Visible;
                     UpdateCanvasSize();
                     LoadAnnotationsForCurrentImage();
+                    EnsureTemplate();
                 }
-
                 UpdateAnnotationStatus();
                 if (CheckAnnotationsExist()) btnStartTraining.IsEnabled = true;
                 txtStatusBar.Text = $"User: {currentUser} | Mode: Training | Project: {currentProjectName}";
@@ -118,638 +125,797 @@ namespace PixtechApplication
                 pnlTraining.Visibility = Visibility.Collapsed;
                 annotationCanvas.Visibility = Visibility.Collapsed;
                 annotationCanvas.Children.Clear();
-                isAnnotationMode = false;
-                btnAnnotate.IsEnabled = false;
-                btnStartTraining.IsEnabled = false;
+                tplRect = null; tplHandleBR = tplHandleR = tplHandleB = null; tplLabel = null;
+                btnAnnotate.IsEnabled = btnStartTraining.IsEnabled = false;
                 txtStatusBar.Text = $"User: {currentUser} | Mode: Inference | Project: {currentProjectName}";
             }
         }
 
-        #region Annotation Methods
+        // ════════════════════════════════════════════════════════════════
+        // TEMPLATE — cyan box, resize only, NO rotation
+        // ════════════════════════════════════════════════════════════════
 
-        private void Annotate_Click(object sender, RoutedEventArgs e)
+        private bool IsTemplateElement(object el) =>
+            el == tplRect || el == tplHandleBR || el == tplHandleR || el == tplHandleB || el == tplLabel;
+
+        private void EnsureTemplate()
         {
-            if (imageFiles.Count == 0)
-            {
-                MessageBox.Show("Please load images first!", "No Images", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-            MessageBox.Show("Draw rectangles around each character, then enter the label.\n\nRight-click on rectangles to edit or delete.\n\nAnnotations are saved automatically!", "Annotation Mode Ready", MessageBoxButton.OK, MessageBoxImage.Information);
+            if (tplRect != null) return;
+            DrawTemplate();
         }
 
-        private void UpdateCanvasSize()
+        private void RemoveTemplateVisuals()
         {
-            if (imgDisplay.Source != null && imgDisplay.ActualWidth > 0)
-            {
-                annotationCanvas.Width = imgDisplay.ActualWidth;
-                annotationCanvas.Height = imgDisplay.ActualHeight;
-            }
+            foreach (var el in new UIElement[] { tplRect, tplHandleBR, tplHandleR, tplHandleB, tplLabel })
+                if (el != null) annotationCanvas.Children.Remove(el);
+            tplRect = null; tplHandleBR = tplHandleR = tplHandleB = null; tplLabel = null;
         }
+
+        private void DrawTemplate()
+        {
+            RemoveTemplateVisuals();
+            double W = templateWidth, H = templateHeight, L = tplLeft, T = tplTop;
+            const double HS = 9;
+
+            tplRect = new Rectangle
+            {
+                Width = W,
+                Height = H,
+                Stroke = Brushes.Cyan,
+                StrokeThickness = 2,
+                Fill = new SolidColorBrush(Color.FromArgb(15, 0, 255, 255)),
+                Cursor = Cursors.SizeAll,
+                Tag = "TPL",
+            };
+            PutOnCanvas(tplRect, L, T, 900);
+            tplRect.MouseLeftButtonDown += TplBody_Down;
+            tplRect.MouseLeftButtonUp += TplAny_Up;
+
+            tplLabel = new TextBlock
+            {
+                Text = $"{(int)W}×{(int)H}",
+                Foreground = Brushes.Cyan,
+                FontSize = 8,
+                FontWeight = FontWeights.Bold,
+                IsHitTestVisible = false,
+            };
+            PutOnCanvas(tplLabel, L + 2, T + 2, 901);
+
+            tplHandleBR = MakeTplHandle(Cursors.SizeNWSE, "BR");
+            tplHandleR = MakeTplHandle(Cursors.SizeWE, "R");
+            tplHandleB = MakeTplHandle(Cursors.SizeNS, "B");
+            PutOnCanvas(tplHandleBR, L + W - HS, T + H - HS, 902);
+            PutOnCanvas(tplHandleR, L + W - HS, T + H / 2 - HS / 2, 902);
+            PutOnCanvas(tplHandleB, L + W / 2 - HS / 2, T + H - HS, 902);
+        }
+
+        private Rectangle MakeTplHandle(Cursor cur, string tag)
+        {
+            var r = new Rectangle { Width = 9, Height = 9, Fill = Brushes.White, Stroke = Brushes.Cyan, StrokeThickness = 1.5, Cursor = cur, Tag = tag };
+            r.MouseLeftButtonDown += TplHandle_Down;
+            r.MouseLeftButtonUp += TplAny_Up;
+            return r;
+        }
+
+        private void PutOnCanvas(UIElement el, double l, double t, int z)
+        {
+            Canvas.SetLeft(el, l); Canvas.SetTop(el, t); Panel.SetZIndex(el, z);
+            if (!annotationCanvas.Children.Contains(el)) annotationCanvas.Children.Add(el);
+        }
+
+        private void UpdateTemplate()
+        {
+            if (tplRect == null) return;
+            double W = templateWidth, H = templateHeight, L = tplLeft, T = tplTop;
+            const double HS = 9;
+            Canvas.SetLeft(tplRect, L); Canvas.SetTop(tplRect, T);
+            tplRect.Width = W; tplRect.Height = H;
+            Canvas.SetLeft(tplLabel, L + 2); Canvas.SetTop(tplLabel, T + 2);
+            tplLabel.Text = $"{(int)W}×{(int)H}";
+            Canvas.SetLeft(tplHandleBR, L + W - HS); Canvas.SetTop(tplHandleBR, T + H - HS);
+            Canvas.SetLeft(tplHandleR, L + W - HS); Canvas.SetTop(tplHandleR, T + H / 2 - HS / 2);
+            Canvas.SetLeft(tplHandleB, L + W / 2 - HS / 2); Canvas.SetTop(tplHandleB, T + H - HS);
+        }
+
+        private void TplBody_Down(object sender, MouseButtonEventArgs e)
+        {
+            isDraggingTpl = true;
+            dragStart = e.GetPosition(annotationCanvas);
+            dragStartL = tplLeft; dragStartT = tplTop;
+            tplRect.CaptureMouse(); e.Handled = true;
+        }
+
+        private void TplHandle_Down(object sender, MouseButtonEventArgs e)
+        {
+            isResizingTpl = true;
+            resizeDir = (sender as FrameworkElement)?.Tag?.ToString() ?? "BR";
+            dragStart = e.GetPosition(annotationCanvas);
+            dragStartW = templateWidth; dragStartH = templateHeight;
+            (sender as UIElement)?.CaptureMouse(); e.Handled = true;
+        }
+
+        private void TplAny_Up(object sender, MouseButtonEventArgs e)
+        {
+            isDraggingTpl = isResizingTpl = false;
+            (sender as UIElement)?.ReleaseMouseCapture();
+            Mouse.Capture(null); e.Handled = true;
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        // CANVAS MOUSE
+        // ════════════════════════════════════════════════════════════════
 
         private void AnnotationCanvas_MouseDown(object sender, MouseButtonEventArgs e)
         {
             if (!isTrainingMode || e.ChangedButton != MouseButton.Left) return;
-            annotationStartPoint = e.GetPosition(annotationCanvas);
-            currentAnnotationRect = new Rectangle
+
+            // Block if clicking template or existing annotation visuals
+            if (e.OriginalSource is UIElement src && IsTemplateElement(src)) return;
+            if (e.OriginalSource is Rectangle existR && currentImageAnnotations.Any(a => a.VisualRect == existR)) return;
+            if (e.OriginalSource is Ellipse existE && currentImageAnnotations.Any(a => a.RotDot == existE)) return;
+
+            // Begin drag-stamp: draw a preview rect that follows the mouse
+            isStamping = true;
+            var pt = e.GetPosition(annotationCanvas);
+            stampPreview = new Rectangle
             {
-                Stroke = Brushes.Red,
+                Width = templateWidth,
+                Height = templateHeight,
+                Stroke = Brushes.Lime,
                 StrokeThickness = 2,
-                StrokeDashArray = new DoubleCollection { 4, 2 },
-                Fill = new SolidColorBrush(Color.FromArgb(30, 255, 0, 0))
+                Fill = new SolidColorBrush(Color.FromArgb(20, 0, 255, 0)),
+                IsHitTestVisible = false,
             };
-            Canvas.SetLeft(currentAnnotationRect, annotationStartPoint.X);
-            Canvas.SetTop(currentAnnotationRect, annotationStartPoint.Y);
-            annotationCanvas.Children.Add(currentAnnotationRect);
+            Canvas.SetLeft(stampPreview, pt.X - templateWidth / 2);
+            Canvas.SetTop(stampPreview, pt.Y - templateHeight / 2);
+            Panel.SetZIndex(stampPreview, 500);
+            annotationCanvas.Children.Add(stampPreview);
             annotationCanvas.CaptureMouse();
+            e.Handled = true;
         }
 
         private void AnnotationCanvas_MouseMove(object sender, MouseEventArgs e)
         {
-            if (currentAnnotationRect == null) return;
-            Point currentPoint = e.GetPosition(annotationCanvas);
-            double x = Math.Min(annotationStartPoint.X, currentPoint.X);
-            double y = Math.Min(annotationStartPoint.Y, currentPoint.Y);
-            double width = Math.Abs(currentPoint.X - annotationStartPoint.X);
-            double height = Math.Abs(currentPoint.Y - annotationStartPoint.Y);
-            Canvas.SetLeft(currentAnnotationRect, x);
-            Canvas.SetTop(currentAnnotationRect, y);
-            currentAnnotationRect.Width = width;
-            currentAnnotationRect.Height = height;
+            if (!isTrainingMode) return;
+            var pos = e.GetPosition(annotationCanvas);
+
+            // Template move
+            if (isDraggingTpl)
+            {
+                tplLeft = dragStartL + (pos.X - dragStart.X);
+                tplTop = dragStartT + (pos.Y - dragStart.Y);
+                UpdateTemplate(); return;
+            }
+
+            // Template resize
+            if (isResizingTpl)
+            {
+                double dx = pos.X - dragStart.X, dy = pos.Y - dragStart.Y;
+                if (resizeDir == "BR" || resizeDir == "R") templateWidth = Math.Max(15, dragStartW + dx);
+                if (resizeDir == "BR" || resizeDir == "B") templateHeight = Math.Max(15, dragStartH + dy);
+                UpdateTemplate(); return;
+            }
+
+            // Stamp preview follows mouse
+            if (isStamping && stampPreview != null)
+            {
+                Canvas.SetLeft(stampPreview, pos.X - templateWidth / 2);
+                Canvas.SetTop(stampPreview, pos.Y - templateHeight / 2);
+                return;
+            }
+
+            // Per-annotation rotation
+            if (rotatingAnn != null)
+            {
+                double cx = Canvas.GetLeft(rotatingAnn.VisualRect) + rotatingAnn.VisualRect.Width / 2;
+                double cy = Canvas.GetTop(rotatingAnn.VisualRect) + rotatingAnn.VisualRect.Height / 2;
+                double a0 = Math.Atan2(rotDragStart.Y - cy, rotDragStart.X - cx);
+                double a1 = Math.Atan2(pos.Y - cy, pos.X - cx);
+                double newAngle = (rotStartAngle + (a1 - a0) * 180.0 / Math.PI + 360) % 360;
+                rotatingAnn.Angle = newAngle;
+                ((RotateTransform)rotatingAnn.VisualRect.RenderTransform).Angle = newAngle;
+                // Keep rotation dot above rect center
+                if (rotatingAnn.RotDot != null)
+                {
+                    Canvas.SetLeft(rotatingAnn.RotDot, cx - 6);
+                    Canvas.SetTop(rotatingAnn.RotDot, Canvas.GetTop(rotatingAnn.VisualRect) - 18);
+                }
+            }
         }
 
         private void AnnotationCanvas_MouseUp(object sender, MouseButtonEventArgs e)
         {
-            if (currentAnnotationRect == null || e.ChangedButton != MouseButton.Left) return;
-            annotationCanvas.ReleaseMouseCapture();
+            // Finish template ops
+            isDraggingTpl = isResizingTpl = false;
+            tplRect?.ReleaseMouseCapture();
 
-            if (currentAnnotationRect.Width > 10 && currentAnnotationRect.Height > 10)
+            // Finish rotation
+            if (rotatingAnn != null)
             {
-                var labelDialog = new LabelInputDialog();
-                if (labelDialog.ShowDialog() == true && !string.IsNullOrWhiteSpace(labelDialog.CharLabel))
-                {
-                    string label = labelDialog.CharLabel;
-                    currentAnnotationRect.Stroke = Brushes.Lime;
-                    currentAnnotationRect.StrokeThickness = 2;
-                    currentAnnotationRect.StrokeDashArray = null;
-                    currentAnnotationRect.MouseRightButtonUp += AnnotationRect_MouseRightClick;
-
-                    var labelText = new TextBlock
-                    {
-                        Text = label,
-                        Foreground = Brushes.Lime,
-                        FontWeight = FontWeights.Bold,
-                        FontSize = 14,
-                        Background = new SolidColorBrush(Color.FromArgb(180, 0, 0, 0)),
-                        Padding = new Thickness(2)
-                    };
-                    Canvas.SetLeft(labelText, Canvas.GetLeft(currentAnnotationRect) + LABEL_OFFSET);
-                    Canvas.SetTop(labelText, Canvas.GetTop(currentAnnotationRect) + LABEL_OFFSET);
-                    annotationCanvas.Children.Add(labelText);
-
-                    var annotation = new AnnotationData
-                    {
-                        Label = label,
-                        Bounds = new Rect(Canvas.GetLeft(currentAnnotationRect), Canvas.GetTop(currentAnnotationRect), currentAnnotationRect.Width, currentAnnotationRect.Height),
-                        VisualRect = currentAnnotationRect,
-                        LabelText = labelText
-                    };
-                    currentImageAnnotations.Add(annotation);
-                    SaveCurrentImageAnnotations();
-                }
-                else annotationCanvas.Children.Remove(currentAnnotationRect);
-            }
-            else annotationCanvas.Children.Remove(currentAnnotationRect);
-
-            currentAnnotationRect = null;
-        }
-
-        private void AnnotationRect_MouseRightClick(object sender, MouseButtonEventArgs e)
-        {
-            if (e.ChangedButton != MouseButton.Right) return;
-            if (sender is Rectangle clickedRect)
-            {
-                var annotation = currentImageAnnotations.FirstOrDefault(a => a.VisualRect == clickedRect);
-                if (annotation != null)
-                {
-                    var contextMenu = new ContextMenu();
-                    var editItem = new MenuItem { Header = "Edit Label" };
-                    editItem.Click += (s, args) => EditAnnotationLabel(annotation);
-                    var deleteItem = new MenuItem { Header = "Delete" };
-                    deleteItem.Click += (s, args) => DeleteAnnotation(annotation);
-                    contextMenu.Items.Add(editItem);
-                    contextMenu.Items.Add(deleteItem);
-                    clickedRect.ContextMenu = contextMenu;
-                    contextMenu.IsOpen = true;
-                }
-            }
-        }
-
-        private void SeparateAnnotations_Click(object sender, RoutedEventArgs e)
-        {
-            SeparateAnnotationsByImage();
-        }
-
-        private void EditAnnotationLabel(AnnotationData annotation)
-        {
-            var labelDialog = new LabelInputDialog { CharLabel = annotation.Label };
-            if (labelDialog.ShowDialog() == true && !string.IsNullOrWhiteSpace(labelDialog.CharLabel))
-            {
-                annotation.Label = labelDialog.CharLabel;
-                annotation.LabelText.Text = labelDialog.CharLabel;
+                rotatingAnn.RotDot?.ReleaseMouseCapture();
+                rotatingAnn = null;
                 SaveCurrentImageAnnotations();
-                UpdateMasterAnnotationFile();
             }
-        }
 
-        private void DeleteAnnotation(AnnotationData annotation)
-        {
-            var result = MessageBox.Show($"Delete '{annotation.Label}'?", "Confirm", MessageBoxButton.YesNo);
-            if (result == MessageBoxResult.Yes)
+            // Finish stamp — drop rect where mouse is, show label box
+            if (isStamping)
             {
-                annotationCanvas.Children.Remove(annotation.VisualRect);
-                annotationCanvas.Children.Remove(annotation.LabelText);
-                currentImageAnnotations.Remove(annotation);
-                SaveCurrentImageAnnotations();
-                UpdateMasterAnnotationFile();
-            }
-        }
-
-        private void ClearCurrentImageAnnotations_Click(object sender, RoutedEventArgs e)
-        {
-            if (currentImageIndex < 0 || currentImageIndex >= imageFiles.Count)
-            {
-                MessageBox.Show("No image selected!", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                isStamping = false;
+                annotationCanvas.ReleaseMouseCapture();
+                Mouse.Capture(null);
+                if (stampPreview != null)
+                {
+                    var dropPos = e.GetPosition(annotationCanvas);
+                    annotationCanvas.Children.Remove(stampPreview);
+                    stampPreview = null;
+                    StampAnnotation(dropPos);
+                }
                 return;
             }
 
-            var result = MessageBox.Show(
-                $"Delete all annotations for THIS image only?\n\n{IOPath.GetFileName(imageFiles[currentImageIndex])}",
-                "Confirm Delete",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
-
-            if (result == MessageBoxResult.Yes)
-            {
-                try
-                {
-                    annotationCanvas.Children.Clear();
-                    currentImageAnnotations.Clear();
-                    string imagePath = imageFiles[currentImageIndex];
-                    string annotationFile = GetAnnotationFilePath(imagePath);
-
-                    if (File.Exists(annotationFile))
-                    {
-                        File.Delete(annotationFile);
-                        System.Diagnostics.Debug.WriteLine($"Deleted: {annotationFile}");
-                    }
-
-                    UpdateMasterAnnotationFile();
-                    UpdateAnnotationStatus();
-
-                    MessageBox.Show(
-                        $"Annotations cleared for this image!\n\n{IOPath.GetFileName(imagePath)}",
-                        "Cleared",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Information);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Error clearing annotations: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
+            annotationCanvas.ReleaseMouseCapture();
+            Mouse.Capture(null);
         }
 
-        private void SeparateAnnotationsByImage()
+        // ════════════════════════════════════════════════════════════════
+        // STAMP — green rect + rotation dot + inline label textbox
+        // ════════════════════════════════════════════════════════════════
+
+        private void StampAnnotation(Point center)
         {
-            try
-            {
-                string masterFile = IOPath.Combine(annotationsFolder, "all_annotations.json");
+            double x = center.X - templateWidth / 2.0;
+            double y = center.Y - templateHeight / 2.0;
 
-                if (!File.Exists(masterFile))
+            // Green rect
+            var rect = new Rectangle
+            {
+                Width = templateWidth,
+                Height = templateHeight,
+                Stroke = Brushes.Lime,
+                StrokeThickness = 2,
+                Fill = new SolidColorBrush(Color.FromArgb(30, 0, 255, 0)),
+                RenderTransformOrigin = new Point(0.5, 0.5),
+                RenderTransform = new RotateTransform(0),
+            };
+            rect.MouseRightButtonUp += AnnotationRect_RightClick;
+            PutOnCanvas(rect, x, y, 100);
+
+            // Label (starts empty)
+            var lbl = new TextBlock
+            {
+                Text = "",
+                Foreground = Brushes.Lime,
+                FontWeight = FontWeights.Bold,
+                FontSize = 11,
+                Background = new SolidColorBrush(Color.FromArgb(180, 0, 0, 0)),
+                Padding = new Thickness(2),
+                IsHitTestVisible = false,
+            };
+            PutOnCanvas(lbl, x + LABEL_OFFSET, y + LABEL_OFFSET, 101);
+
+            // Green rotation dot above this rect
+            var rotDot = new Ellipse
+            {
+                Width = 12,
+                Height = 12,
+                Fill = Brushes.Lime,
+                Stroke = Brushes.DarkGreen,
+                StrokeThickness = 1.5,
+                Cursor = Cursors.Hand,
+            };
+            PutOnCanvas(rotDot, x + templateWidth / 2 - 6, y - 18, 102);
+
+            // Build annotation object
+            var ann = new AnnotationData
+            {
+                Label = "",
+                Bounds = new Rect(x, y, templateWidth, templateHeight),
+                Angle = 0,
+                VisualRect = rect,
+                LabelText = lbl,
+                RotDot = rotDot,
+            };
+
+            // Wire rotation dot
+            rotDot.MouseLeftButtonDown += (s, ev) =>
+            {
+                rotatingAnn = ann;
+                rotDragStart = ev.GetPosition(annotationCanvas);
+                rotStartAngle = ann.Angle;
+                rotDot.CaptureMouse(); ev.Handled = true;
+            };
+            rotDot.MouseLeftButtonUp += (s, ev) =>
+            {
+                rotDot.ReleaseMouseCapture();
+                rotatingAnn = null;
+                SaveCurrentImageAnnotations(); ev.Handled = true;
+            };
+
+            // Inline textbox inside top-left of rect
+            var tb = new TextBox
+            {
+                Width = Math.Min(templateWidth - 4, 30),
+                Height = Math.Min(templateHeight - 4, 22),
+                MaxLength = 1,
+                FontSize = 11,
+                FontWeight = FontWeights.Bold,
+                Foreground = Brushes.Black,
+                Background = Brushes.White,
+                BorderThickness = new Thickness(0),
+                TextAlignment = TextAlignment.Center,
+                VerticalContentAlignment = VerticalAlignment.Center,
+                Padding = new Thickness(0),
+            };
+            PutOnCanvas(tb, x + 2, y + 2, 200);
+            Dispatcher.InvokeAsync(() => tb.Focus(), System.Windows.Threading.DispatcherPriority.Input);
+
+            void Confirm()
+            {
+                string label = tb.Text.Trim().ToUpper();
+                annotationCanvas.Children.Remove(tb);
+                if (string.IsNullOrEmpty(label))
                 {
-                    MessageBox.Show("No master annotation file found!", "Info");
+                    annotationCanvas.Children.Remove(rect);
+                    annotationCanvas.Children.Remove(lbl);
+                    annotationCanvas.Children.Remove(rotDot);
                     return;
                 }
-
-                string json = File.ReadAllText(masterFile);
-                var allAnnotations = JsonConvert.DeserializeObject<List<CharacterAnnotation>>(json);
-
-                if (allAnnotations == null || allAnnotations.Count == 0)
-                {
-                    MessageBox.Show("No annotations found!", "Info");
-                    return;
-                }
-
-                var groupedByImage = allAnnotations.GroupBy(a => a.ImagePath);
-
-                int savedFiles = 0;
-                foreach (var group in groupedByImage)
-                {
-                    string imagePath = group.Key;
-                    var imageAnnotations = group.ToList();
-                    string annoFile = GetAnnotationFilePath(imagePath);
-                    string imageJson = JsonConvert.SerializeObject(imageAnnotations, Formatting.Indented);
-                    File.WriteAllText(annoFile, imageJson);
-                    savedFiles++;
-                    System.Diagnostics.Debug.WriteLine($"Saved {imageAnnotations.Count} annotations to {IOPath.GetFileName(annoFile)}");
-                }
-
-                MessageBox.Show($"Separated annotations into {savedFiles} individual files!\n\nNow each image has its own annotation file.", "Success");
-
-                if (currentImageIndex >= 0 && currentImageIndex < imageFiles.Count)
-                {
-                    LoadAnnotationsForCurrentImage();
-                }
+                lbl.Text = ann.Label = label;
+                currentImageAnnotations.Add(ann);
+                SaveCurrentImageAnnotations();
+                UpdateAnnotationStatus();
             }
-            catch (Exception ex)
+
+            tb.KeyDown += (s, ev) =>
             {
-                MessageBox.Show($"Error separating annotations: {ex.Message}", "Error");
-            }
+                if (ev.Key == Key.Enter || ev.Key == Key.Return) { Confirm(); ev.Handled = true; }
+                else if (ev.Key == Key.Escape)
+                {
+                    annotationCanvas.Children.Remove(tb);
+                    annotationCanvas.Children.Remove(rect);
+                    annotationCanvas.Children.Remove(lbl);
+                    annotationCanvas.Children.Remove(rotDot);
+                    ev.Handled = true;
+                }
+            };
+            tb.LostFocus += (s, _) =>
+            {
+                if (annotationCanvas.Children.Contains(tb)) Confirm();
+            };
         }
+
+        // ════════════════════════════════════════════════════════════════
+        // RIGHT-CLICK on placed annotation
+        // ════════════════════════════════════════════════════════════════
+
+        private void AnnotationRect_RightClick(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is not Rectangle r) return;
+            var ann = currentImageAnnotations.FirstOrDefault(a => a.VisualRect == r);
+            if (ann == null) return;
+
+            var menu = new ContextMenu();
+
+            var edit = new MenuItem { Header = "✏️ Edit Label" };
+            edit.Click += (s, _) =>
+            {
+                double rx = Canvas.GetLeft(ann.VisualRect), ry = Canvas.GetTop(ann.VisualRect);
+                var tb = new TextBox
+                {
+                    Width = Math.Min(ann.VisualRect.Width - 4, 30),
+                    Height = Math.Min(ann.VisualRect.Height - 4, 22),
+                    MaxLength = 1,
+                    Text = ann.Label,
+                    FontSize = 11,
+                    FontWeight = FontWeights.Bold,
+                    Foreground = Brushes.Black,
+                    Background = Brushes.White,
+                    BorderThickness = new Thickness(0),
+                    TextAlignment = TextAlignment.Center,
+                    VerticalContentAlignment = VerticalAlignment.Center,
+                    Padding = new Thickness(0),
+                };
+                PutOnCanvas(tb, rx + 2, ry + 2, 200);
+                Dispatcher.InvokeAsync(() => { tb.Focus(); tb.SelectAll(); }, System.Windows.Threading.DispatcherPriority.Input);
+
+                void Save()
+                {
+                    if (!annotationCanvas.Children.Contains(tb)) return;
+                    annotationCanvas.Children.Remove(tb);
+                    string newLabel = tb.Text.Trim().ToUpper();
+                    if (!string.IsNullOrEmpty(newLabel)) { ann.Label = newLabel; ann.LabelText.Text = newLabel; }
+                    SaveCurrentImageAnnotations(); UpdateMasterAnnotationFile();
+                }
+                tb.KeyDown += (ts, te) => { if (te.Key == Key.Enter || te.Key == Key.Escape) { Save(); te.Handled = true; } };
+                tb.LostFocus += (ts, _) => Save();
+            };
+
+            var del = new MenuItem { Header = "🗑️ Delete Annotation" };
+            del.Click += (s, _) =>
+            {
+                annotationCanvas.Children.Remove(ann.VisualRect);
+                annotationCanvas.Children.Remove(ann.LabelText);
+                if (ann.RotDot != null) annotationCanvas.Children.Remove(ann.RotDot);
+                currentImageAnnotations.Remove(ann);
+                SaveCurrentImageAnnotations(); UpdateMasterAnnotationFile(); UpdateAnnotationStatus();
+            };
+
+            menu.Items.Add(edit);
+            menu.Items.Add(del);
+            r.ContextMenu = menu;
+            menu.IsOpen = true;
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        // SAVE / LOAD ANNOTATIONS
+        // ════════════════════════════════════════════════════════════════
 
         private void SaveCurrentImageAnnotations()
         {
             if (currentImageIndex < 0 || currentImageIndex >= imageFiles.Count) return;
-            string imagePath = imageFiles[currentImageIndex];
-            string annotationFile = GetAnnotationFilePath(imagePath);
+            string imgPath = imageFiles[currentImageIndex];
+            string file = GetAnnotationFilePath(imgPath);
+            try
+            {
+                if (currentImageAnnotations.Count == 0) { if (File.Exists(file)) File.Delete(file); return; }
+                var src = imgDisplay.Source as BitmapSource; if (src == null) return;
+                double sx = src.PixelWidth / annotationCanvas.ActualWidth;
+                double sy = src.PixelHeight / annotationCanvas.ActualHeight;
+                var list = currentImageAnnotations.Select(a => new CharacterAnnotation
+                {
+                    Label = a.Label,
+                    Angle = a.Angle,
+                    ImagePath = imgPath,
+                    X = a.Bounds.X * sx,
+                    Y = a.Bounds.Y * sy,
+                    Width = a.Bounds.Width * sx,
+                    Height = a.Bounds.Height * sy,
+                }).ToList();
+                File.WriteAllText(file, JsonConvert.SerializeObject(list, Formatting.Indented));
+                UpdateMasterAnnotationFile();
+            }
+            catch (Exception ex) { Debug.WriteLine($"Save: {ex.Message}"); }
+        }
+
+        private void LoadAnnotationsForCurrentImage()
+        {
+            // Remove everything except template visuals
+            foreach (var el in annotationCanvas.Children.OfType<UIElement>().ToList())
+                if (!IsTemplateElement(el)) annotationCanvas.Children.Remove(el);
+            currentImageAnnotations.Clear();
+
+            if (currentImageIndex < 0 || currentImageIndex >= imageFiles.Count || imgDisplay.Source == null) return;
+            string file = GetAnnotationFilePath(imageFiles[currentImageIndex]);
+            if (!File.Exists(file)) return;
 
             try
             {
-                if (currentImageAnnotations.Count == 0)
+                var list = JsonConvert.DeserializeObject<List<CharacterAnnotation>>(File.ReadAllText(file));
+                if (list == null) return;
+                var src = imgDisplay.Source as BitmapSource; if (src == null) return;
+                double sx = annotationCanvas.ActualWidth / src.PixelWidth;
+                double sy = annotationCanvas.ActualHeight / src.PixelHeight;
+
+                foreach (var a in list)
                 {
-                    if (File.Exists(annotationFile)) File.Delete(annotationFile);
-                    return;
+                    double x = a.X * sx, y = a.Y * sy, w = a.Width * sx, h = a.Height * sy;
+
+                    var rect = new Rectangle
+                    {
+                        Width = w,
+                        Height = h,
+                        Stroke = Brushes.Lime,
+                        StrokeThickness = 2,
+                        Fill = new SolidColorBrush(Color.FromArgb(30, 0, 255, 0)),
+                        RenderTransformOrigin = new Point(0.5, 0.5),
+                        RenderTransform = new RotateTransform(a.Angle),
+                    };
+                    rect.MouseRightButtonUp += AnnotationRect_RightClick;
+                    PutOnCanvas(rect, x, y, 100);
+
+                    var lbl = new TextBlock
+                    {
+                        Text = a.Label,
+                        Foreground = Brushes.Lime,
+                        FontWeight = FontWeights.Bold,
+                        FontSize = 11,
+                        Background = new SolidColorBrush(Color.FromArgb(180, 0, 0, 0)),
+                        Padding = new Thickness(2),
+                        IsHitTestVisible = false,
+                    };
+                    PutOnCanvas(lbl, x + LABEL_OFFSET, y + LABEL_OFFSET, 101);
+
+                    var rotDot = new Ellipse
+                    {
+                        Width = 12,
+                        Height = 12,
+                        Fill = Brushes.Lime,
+                        Stroke = Brushes.DarkGreen,
+                        StrokeThickness = 1.5,
+                        Cursor = Cursors.Hand,
+                    };
+                    PutOnCanvas(rotDot, x + w / 2 - 6, y - 18, 102);
+
+                    var ann = new AnnotationData
+                    {
+                        Label = a.Label,
+                        Bounds = new Rect(x, y, w, h),
+                        Angle = a.Angle,
+                        VisualRect = rect,
+                        LabelText = lbl,
+                        RotDot = rotDot,
+                    };
+                    currentImageAnnotations.Add(ann);
+
+                    rotDot.MouseLeftButtonDown += (s, ev) =>
+                    {
+                        rotatingAnn = ann;
+                        rotDragStart = ev.GetPosition(annotationCanvas);
+                        rotStartAngle = ann.Angle;
+                        rotDot.CaptureMouse(); ev.Handled = true;
+                    };
+                    rotDot.MouseLeftButtonUp += (s, ev) =>
+                    {
+                        rotDot.ReleaseMouseCapture(); rotatingAnn = null;
+                        SaveCurrentImageAnnotations(); ev.Handled = true;
+                    };
                 }
-
-                var imageSource = imgDisplay.Source as BitmapSource;
-                if (imageSource == null) return;
-
-                // IMPORTANT: Scale from canvas coordinates to actual image coordinates
-                double scaleX = imageSource.PixelWidth / annotationCanvas.ActualWidth;
-                double scaleY = imageSource.PixelHeight / annotationCanvas.ActualHeight;
-
-                var annotations = currentImageAnnotations.Select(a => new CharacterAnnotation
-                {
-                    Label = a.Label,
-                    X = a.Bounds.X * scaleX,
-                    Y = a.Bounds.Y * scaleY,
-                    Width = a.Bounds.Width * scaleX,
-                    Height = a.Bounds.Height * scaleY,
-                    ImagePath = imagePath
-                }).ToList();
-
-                string json = JsonConvert.SerializeObject(annotations, Formatting.Indented);
-                File.WriteAllText(annotationFile, json);
-                UpdateMasterAnnotationFile();
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error saving annotations: {ex.Message}", "Error");
-            }
-        }
+            catch (Exception ex) { Debug.WriteLine($"Load: {ex.Message}"); }
 
-        private string GetAnnotationFilePath(string imagePath)
-        {
-            string fileName = IOPath.GetFileNameWithoutExtension(imagePath) + ".json";
-            return IOPath.Combine(annotationsFolder, fileName);
+            EnsureTemplate();
         }
 
         private void UpdateMasterAnnotationFile()
         {
             try
             {
-                var allAnnotations = new List<CharacterAnnotation>();
-                foreach (var imgPath in imageFiles)
+                var all = new List<CharacterAnnotation>();
+                foreach (var p in imageFiles)
                 {
-                    string annoFile = GetAnnotationFilePath(imgPath);
-                    if (File.Exists(annoFile))
-                    {
-                        string json = File.ReadAllText(annoFile);
-                        var imgAnnos = JsonConvert.DeserializeObject<List<CharacterAnnotation>>(json);
-                        if (imgAnnos != null) allAnnotations.AddRange(imgAnnos);
-                    }
+                    string f = GetAnnotationFilePath(p);
+                    if (!File.Exists(f)) continue;
+                    var l = JsonConvert.DeserializeObject<List<CharacterAnnotation>>(File.ReadAllText(f));
+                    if (l != null) all.AddRange(l);
                 }
-
-                string masterFile = IOPath.Combine(annotationsFolder, "all_annotations.json");
-                if (allAnnotations.Count > 0)
-                {
-                    string masterJson = JsonConvert.SerializeObject(allAnnotations, Formatting.Indented);
-                    File.WriteAllText(masterFile, masterJson);
-                }
-                else if (File.Exists(masterFile)) File.Delete(masterFile);
-
+                string master = IOPath.Combine(annotationsFolder, "all_annotations.json");
+                if (all.Count > 0) File.WriteAllText(master, JsonConvert.SerializeObject(all, Formatting.Indented));
+                else if (File.Exists(master)) File.Delete(master);
                 UpdateAnnotationStatus();
             }
             catch { }
         }
 
-        #endregion
+        private string GetAnnotationFilePath(string imgPath)
+            => IOPath.Combine(annotationsFolder, IOPath.GetFileNameWithoutExtension(imgPath) + ".json");
 
-        private void LoadAnnotationsForCurrentImage()
+        // ════════════════════════════════════════════════════════════════
+        // IMAGE DISPLAY + LIST (with right-click remove from UI)
+        // ════════════════════════════════════════════════════════════════
+
+        private void UpdateCanvasSize()
         {
-            annotationCanvas.Children.Clear();
-            currentImageAnnotations.Clear();
+            if (imgDisplay.Source != null && imgDisplay.ActualWidth > 0)
+            { annotationCanvas.Width = imgDisplay.ActualWidth; annotationCanvas.Height = imgDisplay.ActualHeight; }
+        }
 
-            if (currentImageIndex < 0 || currentImageIndex >= imageFiles.Count || imgDisplay.Source == null)
-                return;
-
-            string imagePath = imageFiles[currentImageIndex];
-            string annotationFile = GetAnnotationFilePath(imagePath);
-
-            if (File.Exists(annotationFile))
+        private void ShowImage(string path)
+        {
+            try
             {
-                try
+                if (isTrainingMode && currentImageAnnotations.Count > 0) SaveCurrentImageAnnotations();
+                foreach (var el in annotationCanvas.Children.OfType<UIElement>().ToList())
+                    if (!IsTemplateElement(el)) annotationCanvas.Children.Remove(el);
+                currentImageAnnotations.Clear();
+                txtPlaceholder.Visibility = Visibility.Collapsed;
+
+                if (imgDisplay.Source is BitmapImage old) { imgDisplay.Source = null; old.StreamSource?.Dispose(); GC.Collect(); }
+
+                var bmp = new BitmapImage();
+                bmp.BeginInit();
+                bmp.CacheOption = BitmapCacheOption.OnLoad;
+                bmp.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
+                bmp.UriSource = new Uri(path);
+                bmp.EndInit(); bmp.Freeze();
+                imgDisplay.Source = bmp;
+                imgDisplay.Visibility = Visibility.Visible;
+
+                Dispatcher.InvokeAsync(() =>
                 {
-                    string json = File.ReadAllText(annotationFile);
-                    var annotations = JsonConvert.DeserializeObject<List<CharacterAnnotation>>(json);
-                    if (annotations == null) return;
-
-                    var imageSource = imgDisplay.Source as BitmapSource;
-                    if (imageSource == null) return;
-
-                    double scaleX = annotationCanvas.ActualWidth / imageSource.PixelWidth;
-                    double scaleY = annotationCanvas.ActualHeight / imageSource.PixelHeight;
-
-                    foreach (var anno in annotations)
-                    {
-                        double x = anno.X * scaleX;
-                        double y = anno.Y * scaleY;
-                        double width = anno.Width * scaleX;
-                        double height = anno.Height * scaleY;
-
-                        var rect = new Rectangle
-                        {
-                            Stroke = Brushes.Lime,
-                            StrokeThickness = 2,
-                            Fill = new SolidColorBrush(Color.FromArgb(30, 0, 255, 0)),
-                            Width = width,
-                            Height = height
-                        };
-                        rect.MouseRightButtonUp += AnnotationRect_MouseRightClick;
-                        Canvas.SetLeft(rect, x);
-                        Canvas.SetTop(rect, y);
-                        annotationCanvas.Children.Add(rect);
-
-                        var labelText = new TextBlock
-                        {
-                            Text = anno.Label,
-                            Foreground = Brushes.Lime,
-                            FontWeight = FontWeights.Bold,
-                            FontSize = 14,
-                            Background = new SolidColorBrush(Color.FromArgb(180, 0, 0, 0)),
-                            Padding = new Thickness(2)
-                        };
-                        Canvas.SetLeft(labelText, x + LABEL_OFFSET);
-                        Canvas.SetTop(labelText, y + LABEL_OFFSET);
-                        annotationCanvas.Children.Add(labelText);
-
-                        currentImageAnnotations.Add(new AnnotationData
-                        {
-                            Label = anno.Label,
-                            Bounds = new Rect(x, y, width, height),
-                            VisualRect = rect,
-                            LabelText = labelText
-                        });
-                    }
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"Error loading annotations: {ex.Message}");
-                }
+                    imgDisplay.UpdateLayout(); UpdateCanvasSize();
+                    if (isTrainingMode) { annotationCanvas.Visibility = Visibility.Visible; LoadAnnotationsForCurrentImage(); EnsureTemplate(); }
+                }, System.Windows.Threading.DispatcherPriority.Loaded);
             }
+            catch (Exception ex) { MessageBox.Show($"Error: {ex.Message}"); }
         }
 
-        private bool CheckAnnotationsExist()
+        private void UpdateImageList()
         {
-            return File.Exists(IOPath.Combine(annotationsFolder, "all_annotations.json"));
-        }
-
-        private void UpdateAnnotationStatus()
-        {
-            string masterFile = IOPath.Combine(annotationsFolder, "all_annotations.json");
-
-            if (File.Exists(masterFile))
+            lstImages.Items.Clear();
+            foreach (var path in imageFiles)
             {
-                try
+                var item = new ListBoxItem { Content = IOPath.GetFileName(path), Tag = path };
+                // Right-click to remove from UI (does NOT delete the file)
+                var menu = new ContextMenu();
+                var removeItem = new MenuItem { Header = "❌ Remove from list" };
+                string capturedPath = path;
+                removeItem.Click += (s, e) =>
                 {
-                    string json = File.ReadAllText(masterFile);
-                    var annotations = JsonConvert.DeserializeObject<List<CharacterAnnotation>>(json);
-
-                    if (annotations != null && annotations.Count > 0)
+                    imageFiles.Remove(capturedPath);
+                    UpdateImageList();
+                    if (imageFiles.Count > 0)
                     {
-                        var uniqueChars = annotations.Select(a => a.Label).Distinct().Count();
-                        var uniqueImages = annotations.Select(a => a.ImagePath).Distinct().Count();
-                        txtAnnotationStatus.Text = $" {annotations.Count} annotations\n{uniqueImages} images | {uniqueChars} unique characters";
-                        txtAnnotationStatus.Foreground = new SolidColorBrush(Colors.Green);
-                        btnStartTraining.IsEnabled = true;
-                        if (btnStartTrainingBig != null) btnStartTrainingBig.IsEnabled = true;
+                        currentImageIndex = Math.Min(currentImageIndex, imageFiles.Count - 1);
+                        ShowImage(imageFiles[currentImageIndex]);
+                        lstImages.SelectedIndex = currentImageIndex;
                     }
                     else
                     {
-                        txtAnnotationStatus.Text = " No annotations yet";
-                        txtAnnotationStatus.Foreground = new SolidColorBrush(Colors.Orange);
-                        btnStartTraining.IsEnabled = false;
-                        if (btnStartTrainingBig != null) btnStartTrainingBig.IsEnabled = false;
+                        imgDisplay.Source = null;
+                        foreach (var el in annotationCanvas.Children.OfType<UIElement>().ToList())
+                            if (!IsTemplateElement(el)) annotationCanvas.Children.Remove(el);
+                        currentImageAnnotations.Clear();
+                        txtPlaceholder.Visibility = Visibility.Visible;
                     }
-                }
-                catch
-                {
-                    txtAnnotationStatus.Text = " Error reading annotations";
-                    txtAnnotationStatus.Foreground = new SolidColorBrush(Colors.Red);
-                    btnStartTraining.IsEnabled = false;
-                    if (btnStartTrainingBig != null) btnStartTrainingBig.IsEnabled = false;
-                }
+                    txtImageCount.Text = $"Images: {imageFiles.Count}";
+                };
+                menu.Items.Add(removeItem);
+                item.ContextMenu = menu;
+                lstImages.Items.Add(item);
             }
-            else
+            txtImageCount.Text = $"Images: {imageFiles.Count}";
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        // ANNOTATION STATUS + CLEAR BUTTONS
+        // ════════════════════════════════════════════════════════════════
+
+        private void UpdateAnnotationStatus()
+        {
+            string master = IOPath.Combine(annotationsFolder, "all_annotations.json");
+            if (!File.Exists(master))
             {
                 txtAnnotationStatus.Text = " No annotations yet";
                 txtAnnotationStatus.Foreground = new SolidColorBrush(Colors.Red);
                 btnStartTraining.IsEnabled = false;
                 if (btnStartTrainingBig != null) btnStartTrainingBig.IsEnabled = false;
+                return;
             }
+            try
+            {
+                var a = JsonConvert.DeserializeObject<List<CharacterAnnotation>>(File.ReadAllText(master));
+                if (a != null && a.Count > 0)
+                {
+                    txtAnnotationStatus.Text = $" {a.Count} annotations\n{a.Select(x => x.ImagePath).Distinct().Count()} images | {a.Select(x => x.Label).Distinct().Count()} unique characters";
+                    txtAnnotationStatus.Foreground = new SolidColorBrush(Colors.Green);
+                    btnStartTraining.IsEnabled = true;
+                    if (btnStartTrainingBig != null) btnStartTrainingBig.IsEnabled = true;
+                }
+                else
+                {
+                    txtAnnotationStatus.Text = " No annotations yet";
+                    txtAnnotationStatus.Foreground = new SolidColorBrush(Colors.Orange);
+                    btnStartTraining.IsEnabled = false;
+                    if (btnStartTrainingBig != null) btnStartTrainingBig.IsEnabled = false;
+                }
+            }
+            catch { txtAnnotationStatus.Text = " Error reading annotations"; }
         }
 
-        private void CheckAnnotations_Click(object sender, RoutedEventArgs e)
+        private bool CheckAnnotationsExist() => File.Exists(IOPath.Combine(annotationsFolder, "all_annotations.json"));
+
+        private void Annotate_Click(object sender, RoutedEventArgs e) { }
+        private void CheckAnnotations_Click(object sender, RoutedEventArgs e) => UpdateAnnotationStatus();
+
+        private void ClearCurrentImageAnnotations_Click(object sender, RoutedEventArgs e)
         {
-            UpdateAnnotationStatus();
-            MessageBox.Show("Annotation status refreshed!", "Updated", MessageBoxButton.OK, MessageBoxImage.Information);
+            if (currentImageIndex < 0 || currentImageIndex >= imageFiles.Count) return;
+            if (MessageBox.Show($"Clear annotations for {IOPath.GetFileName(imageFiles[currentImageIndex])}?",
+                "Confirm", MessageBoxButton.YesNo) != MessageBoxResult.Yes) return;
+            foreach (var el in annotationCanvas.Children.OfType<UIElement>().ToList())
+                if (!IsTemplateElement(el)) annotationCanvas.Children.Remove(el);
+            currentImageAnnotations.Clear();
+            string f = GetAnnotationFilePath(imageFiles[currentImageIndex]);
+            if (File.Exists(f)) File.Delete(f);
+            UpdateMasterAnnotationFile(); UpdateAnnotationStatus();
         }
 
         private void ClearAllAnnotations_Click(object sender, RoutedEventArgs e)
         {
-            var result = MessageBox.Show(
-                " WARNING \n\nThis will DELETE ALL annotations from ALL images!\n\nYou'll need to re-annotate everything.\n\nAre you absolutely sure?",
-                "Confirm Delete All",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Warning);
-
-            if (result == MessageBoxResult.Yes)
-            {
-                try
-                {
-                    if (Directory.Exists(annotationsFolder))
-                    {
-                        foreach (var file in Directory.GetFiles(annotationsFolder, "*.json"))
-                        {
-                            File.Delete(file);
-                            System.Diagnostics.Debug.WriteLine($"Deleted: {file}");
-                        }
-                    }
-
-                    currentImageAnnotations.Clear();
-                    annotationCanvas.Children.Clear();
-                    UpdateAnnotationStatus();
-
-                    MessageBox.Show(
-                        "All annotations deleted successfully!\n\nYou can now re-annotate your images from scratch.",
-                        "Annotations Cleared",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Information);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Error clearing annotations: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
+            if (MessageBox.Show("Delete ALL annotations from ALL images?",
+                "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) return;
+            if (Directory.Exists(annotationsFolder))
+                foreach (var f in Directory.GetFiles(annotationsFolder, "*.json")) File.Delete(f);
+            foreach (var el in annotationCanvas.Children.OfType<UIElement>().ToList())
+                if (!IsTemplateElement(el)) annotationCanvas.Children.Remove(el);
+            currentImageAnnotations.Clear();
+            UpdateAnnotationStatus();
         }
 
-        // ========================================
-        // SIAMESE NETWORK TRAINING
-        // ========================================
+        private void SeparateAnnotations_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                string master = IOPath.Combine(annotationsFolder, "all_annotations.json");
+                if (!File.Exists(master)) return;
+                var all = JsonConvert.DeserializeObject<List<CharacterAnnotation>>(File.ReadAllText(master));
+                if (all == null) return;
+                foreach (var grp in all.GroupBy(a => a.ImagePath))
+                    File.WriteAllText(GetAnnotationFilePath(grp.Key), JsonConvert.SerializeObject(grp.ToList(), Formatting.Indented));
+                if (currentImageIndex >= 0 && currentImageIndex < imageFiles.Count) LoadAnnotationsForCurrentImage();
+            }
+            catch (Exception ex) { MessageBox.Show($"Error: {ex.Message}"); }
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        // TRAINING
+        // ════════════════════════════════════════════════════════════════
+
         private async void StartTraining_Click(object sender, RoutedEventArgs e)
         {
-            string pythonPath = @"C:\Users\Pixtech Workstation\AppData\Local\Programs\Python\Python311\python.exe";
+            string python = @"C:\Users\Pixtech Workstation\AppData\Local\Programs\Python\Python311\python.exe";
             string baseDir = AppDomain.CurrentDomain.BaseDirectory;
             string trainScript = IOPath.Combine(baseDir, "train_last_layer.py");
-            string annotationFile = IOPath.Combine(annotationsFolder, "all_annotations.json");
+            string annoFile = IOPath.Combine(annotationsFolder, "all_annotations.json");
             string modelDir = IOPath.Combine(currentProjectFolder, "TrainedModel");
-
-            int epochs = 50;
-            int batchSize = 32;
+            int epochs = 50, batch = 32;
             if (txtEpochs != null && int.TryParse(txtEpochs.Text, out int e2)) epochs = e2;
-            if (txtBatchSize != null && int.TryParse(txtBatchSize.Text, out int b2)) batchSize = b2;
-
-            // ── Validation ────────────────────────────────────────────────────────────
-            if (!File.Exists(trainScript))
-            {
-                MessageBox.Show($"train_last_layer.py not found in:\n{baseDir}", "Missing Script");
-                return;
-            }
-            if (!File.Exists(annotationFile))
-            {
-                MessageBox.Show("No annotations found!\n\nAnnotate the wrong characters first, then train.",
-                                "No Annotations");
-                return;
-            }
-
+            if (txtBatchSize != null && int.TryParse(txtBatchSize.Text, out int b2)) batch = b2;
+            if (!File.Exists(trainScript)) { MessageBox.Show($"train_last_layer.py not found"); return; }
+            if (!File.Exists(annoFile)) { MessageBox.Show("No annotations found!"); return; }
             btnStartTraining.IsEnabled = false;
             if (btnStartTrainingBig != null) btnStartTrainingBig.IsEnabled = false;
-            progressBarTraining.Value = 0;
-            txtTrainingStatus.Text = "Starting training...";
-
-            var errors = new System.Text.StringBuilder();
-
+            progressBarTraining.Value = 0; txtTrainingStatus.Text = "Starting...";
+            var errs = new System.Text.StringBuilder();
             try
             {
                 await Task.Run(() =>
                 {
-                    var p = new Process
+                    var proc = new Process
                     {
                         StartInfo = new ProcessStartInfo
                         {
-                            FileName = pythonPath,
-                            Arguments = $"\"{trainScript}\" \"{annotationFile}\" \"{modelDir}\" "
-                                      + $"--epochs {epochs} --batch {batchSize} --augments 80",
+                            FileName = python,
+                            Arguments = $"\"{trainScript}\" \"{annoFile}\" \"{modelDir}\" --epochs {epochs} --batch {batch} --augments 80",
                             RedirectStandardOutput = true,
                             RedirectStandardError = true,
                             UseShellExecute = false,
                             CreateNoWindow = true,
-                            WorkingDirectory = baseDir
+                            WorkingDirectory = baseDir,
                         }
                     };
-
-                    p.OutputDataReceived += (s, args) =>
+                    proc.OutputDataReceived += (s, a) =>
                     {
-                        if (string.IsNullOrEmpty(args.Data)) return;
+                        if (string.IsNullOrEmpty(a.Data)) return;
                         Dispatcher.Invoke(() =>
                         {
-                            txtTrainingStatus.Text = args.Data;
-                            System.Diagnostics.Debug.WriteLine($"[TRAIN] {args.Data}");
-
-                            // Update progress bar from "Epoch X/Y" lines
-                            if (args.Data.StartsWith("Epoch"))
+                            txtTrainingStatus.Text = a.Data;
+                            if (a.Data.StartsWith("Epoch"))
                             {
-                                // "Epoch   5/ 50 | Train: 98.2% | Val: 96.1% | 1.3s"
-                                var parts = args.Data.Split('/');
+                                var parts = a.Data.Split('/');
                                 if (parts.Length >= 2)
                                 {
                                     int cur = int.TryParse(parts[0].Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Last(), out int c) ? c : 0;
-                                    int total = int.TryParse(parts[1].Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).First(), out int t) ? t : epochs;
-                                    progressBarTraining.Value = cur * 100.0 / total;
+                                    int tot = int.TryParse(parts[1].Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).First(), out int t) ? t : epochs;
+                                    progressBarTraining.Value = cur * 100.0 / tot;
                                 }
                             }
-
-                            // Training finished
-                            if (args.Data.StartsWith("TRAINING_COMPLETE:"))
+                            if (a.Data.StartsWith("TRAINING_COMPLETE:"))
                             {
-                                string accStr = args.Data.Split(':')[1];
-                                double.TryParse(accStr, System.Globalization.NumberStyles.Float,
-                                                System.Globalization.CultureInfo.InvariantCulture, out double acc);
-
-                                progressBarTraining.Value = 100;
-                                txtTrainingStatus.Text = $"Done! Val accuracy: {acc:F1}%";
-
-                                MessageBox.Show(
-                                    $"TRAINING COMPLETE!\n\n" +
-                                    $"Validation accuracy: {acc:F1}%\n\n" +
-                                    $"Your model has learned what your stamp characters\n" +
-                                    $"look like visually — it will now correct EasyOCR\n" +
-                                    $"on ANY future image automatically.\n\n" +
-                                    $"Switch to Inference Mode and test it.",
-                                    "Training Complete",
-                                    MessageBoxButton.OK,
-                                    MessageBoxImage.Information);
+                                double.TryParse(a.Data.Split(':')[1], System.Globalization.NumberStyles.Float,
+                                    System.Globalization.CultureInfo.InvariantCulture, out double acc);
+                                progressBarTraining.Value = 100; txtTrainingStatus.Text = $"Done! Val: {acc:F1}%";
+                                MessageBox.Show($"Training complete!\nVal accuracy: {acc:F1}%\n\nSwitch to Inference Mode to test.", "Done");
                             }
                         });
                     };
-
-                    p.ErrorDataReceived += (s, args) =>
-                    {
-                        if (!string.IsNullOrEmpty(args.Data))
-                        {
-                            errors.AppendLine(args.Data);
-                            System.Diagnostics.Debug.WriteLine($"[TRAIN ERR] {args.Data}");
-                        }
-                    };
-
-                    p.Start();
-                    p.BeginOutputReadLine();
-                    p.BeginErrorReadLine();
-                    p.WaitForExit();
-
-                    if (p.ExitCode != 0)
-                    {
-                        Dispatcher.Invoke(() =>
-                        {
-                            txtTrainingStatus.Text = "Training failed!";
-                            string errText = errors.ToString();
-                            string display = errText.Length > 800
-                                ? "...\n" + errText.Substring(errText.Length - 800)
-                                : errText;
-                            MessageBox.Show(
-                                $"Training failed.\n\nPython error:\n{display}",
-                                "Training Error",
-                                MessageBoxButton.OK,
-                                MessageBoxImage.Error);
-                        });
-                    }
+                    proc.ErrorDataReceived += (s, a) => { if (!string.IsNullOrEmpty(a.Data)) errs.AppendLine(a.Data); };
+                    proc.Start(); proc.BeginOutputReadLine(); proc.BeginErrorReadLine(); proc.WaitForExit();
+                    if (proc.ExitCode != 0)
+                        Dispatcher.Invoke(() => { txtTrainingStatus.Text = "Failed!"; MessageBox.Show($"Error:\n{errs}", "Training Error"); });
                 });
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error: {ex.Message}", "Error");
-                txtTrainingStatus.Text = "Training failed!";
-            }
+            catch (Exception ex) { MessageBox.Show($"Error: {ex.Message}"); }
             finally
             {
                 btnStartTraining.IsEnabled = true;
@@ -757,462 +923,114 @@ namespace PixtechApplication
             }
         }
 
+        // ════════════════════════════════════════════════════════════════
+        // INFERENCE
+        // ════════════════════════════════════════════════════════════════
 
-        // ========================================
-        // SIAMESE NETWORK INFERENCE
-        // ========================================
-        private async Task<SiameseOCRResult> RunCustomOCR(string imagePath)
-        {
-            return await Task.Run(() =>
-            {
-                try
-                {
-                    string pythonPath = @"C:\Users\Pixtech Workstation\AppData\Local\Programs\Python\Python311\python.exe";
-                    string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-                    string scriptPath = IOPath.Combine(baseDir, "inference_custom.py");
-                    string customModelPath = IOPath.Combine(modelsFolder, "custom_finetuned.pth");
-
-                    if (!File.Exists(scriptPath))
-                    {
-                        return new SiameseOCRResult
-                        {
-                            Success = false,
-                            Error = $"inference_custom.py not found in {baseDir}"
-                        };
-                    }
-
-                    if (!File.Exists(customModelPath))
-                    {
-                        return new SiameseOCRResult
-                        {
-                            Success = false,
-                            Error = "No trained custom model! Train first in Training Mode."
-                        };
-                    }
-
-                    using (var p = Process.Start(new ProcessStartInfo
-                    {
-                        FileName = pythonPath,
-                        Arguments = $"\"{scriptPath}\" \"{customModelPath}\" \"{imagePath}\" output",
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true,
-                        UseShellExecute = false,
-                        CreateNoWindow = true,
-                        WorkingDirectory = baseDir,
-                        StandardOutputEncoding = System.Text.Encoding.UTF8
-                    }))
-                    {
-                        string output = p.StandardOutput.ReadToEnd();
-                        string errors = p.StandardError.ReadToEnd();
-                        p.WaitForExit();
-
-                        System.Diagnostics.Debug.WriteLine($"[CUSTOM] Output: {output}");
-                        System.Diagnostics.Debug.WriteLine($"[CUSTOM] Errors: {errors}");
-
-                        if (p.ExitCode != 0)
-                        {
-                            return new SiameseOCRResult
-                            {
-                                Success = false,
-                                Error = $"Python error:\n{errors}"
-                            };
-                        }
-
-                        string resultFile = IOPath.Combine(baseDir, "output", "result.json");
-                        if (File.Exists(resultFile))
-                        {
-                            string resultJson = File.ReadAllText(resultFile);
-                            var result = JsonConvert.DeserializeObject<SiameseOCRResult>(resultJson);
-                            result.Success = true;
-                            return result;
-                        }
-
-                        return new SiameseOCRResult
-                        {
-                            Success = false,
-                            Error = "No output file generated"
-                        };
-                    }
-                }
-                catch (Exception ex)
-                {
-                    return new SiameseOCRResult
-                    {
-                        Success = false,
-                        Error = ex.Message
-                    };
-                }
-            });
-        }
-        // ========================================
-        // EASYOCR INFERENCE
-        // ========================================
-        private async Task<SiameseOCRResult> RunEasyOCR(string imagePath)
-        {
-            return await Task.Run(() =>
-            {
-                try
-                {
-                    string pythonPath = @"C:\Users\Pixtech Workstation\AppData\Local\Programs\Python\Python311\python.exe";
-                    string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-                    string scriptPath = IOPath.Combine(baseDir, "final_ocr.py");
-                    string correctionModel = IOPath.Combine(modelsFolder, "correction_model.pth");
-                    string modelArg = File.Exists(correctionModel) ? $"\"{correctionModel}\"" : "\"\"";
-
-
-                    if (!File.Exists(scriptPath))
-                    {
-                        return new SiameseOCRResult
-                        {
-                            Success = false,
-                            Error = $"final_ocr.py not found in {baseDir}"
-                        };
-                    }
-
-                    // Use correction model if it exists, otherwise pure EasyOCR
-                    
-
-                    using (var p = Process.Start(new ProcessStartInfo
-                    {
-                        FileName = pythonPath,
-                        Arguments = $"\"{scriptPath}\" \"{imagePath}\" {modelArg} output",
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true,
-                        UseShellExecute = false,
-                        CreateNoWindow = true,
-                        WorkingDirectory = baseDir,
-                        StandardOutputEncoding = System.Text.Encoding.UTF8
-                    }))
-                    {
-                        string output = p.StandardOutput.ReadToEnd();
-                        string errors = p.StandardError.ReadToEnd();
-                        p.WaitForExit();
-
-                        System.Diagnostics.Debug.WriteLine($"[FINAL_OCR] Output: {output}");
-                        System.Diagnostics.Debug.WriteLine($"[FINAL_OCR] Errors: {errors}");
-
-                        if (p.ExitCode != 0)
-                        {
-                            return new SiameseOCRResult
-                            {
-                                Success = false,
-                                Error = $"OCR Error:\n{errors}"
-                            };
-                        }
-
-                        string resultFile = IOPath.Combine(baseDir, "output", "result.json");
-                        if (File.Exists(resultFile))
-                        {
-                            string resultJson = File.ReadAllText(resultFile);
-                            var result = JsonConvert.DeserializeObject<SiameseOCRResult>(resultJson);
-                            result.Success = true;
-                            return result;
-                        }
-
-                        return new SiameseOCRResult
-                        {
-                            Success = false,
-                            Error = "No result file generated"
-                        };
-                    }
-                }
-                catch (Exception ex)
-                {
-                    return new SiameseOCRResult
-                    {
-                        Success = false,
-                        Error = $"Exception: {ex.Message}"
-                    };
-                }
-            });
-        }
         private async void RunInference_Click(object sender, RoutedEventArgs e)
         {
-            if (imageFiles.Count == 0)
-            {
-                MessageBox.Show("Load images first!", "No Images");
-                return;
-            }
-
-            string imagePath = (lstImages.SelectedItem is ListBoxItem item && item.Tag is string p)
-                ? p : imageFiles[currentImageIndex];
-
+            if (imageFiles.Count == 0) { MessageBox.Show("Load images first!"); return; }
+            string imgPath = (lstImages.SelectedItem is ListBoxItem li && li.Tag is string p) ? p : imageFiles[currentImageIndex];
             string modelDir = IOPath.Combine(currentProjectFolder, "TrainedModel");
-            string modelDirArg = Directory.Exists(modelDir) ? $"\"{modelDir}\"" : "\"\"";
-
-            btnRunInference.IsEnabled = false;
-            progressBar.IsIndeterminate = true;
-            txtResult.Text = "Running OCR...";
-            txtStatus.Text = "Loading EasyOCR (first run may take 30-60s)...";
-
+            string mdArg = Directory.Exists(modelDir) ? $"\"{modelDir}\"" : "\"\"";
+            btnRunInference.IsEnabled = false; progressBar.IsIndeterminate = true;
+            txtResult.Text = "Running OCR..."; txtStatus.Text = "Loading EasyOCR...";
             try
             {
-                string pythonPath = @"C:\Users\Pixtech Workstation\AppData\Local\Programs\Python\Python311\python.exe";
+                string python = @"C:\Users\Pixtech Workstation\AppData\Local\Programs\Python\Python311\python.exe";
                 string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-                string scriptPath = IOPath.Combine(baseDir, "final_ocr.py");
-
+                string script = IOPath.Combine(baseDir, "final_ocr.py");
                 var result = await Task.Run(() =>
                 {
                     using var proc = Process.Start(new ProcessStartInfo
                     {
-                        FileName = pythonPath,
-                        Arguments = $"\"{scriptPath}\" \"{imagePath}\" {modelDirArg} output",
+                        FileName = python,
+                        Arguments = $"\"{script}\" \"{imgPath}\" {mdArg} output",
                         RedirectStandardOutput = true,
                         RedirectStandardError = true,
                         UseShellExecute = false,
                         CreateNoWindow = true,
                         WorkingDirectory = baseDir,
-                        StandardOutputEncoding = System.Text.Encoding.UTF8
+                        StandardOutputEncoding = System.Text.Encoding.UTF8,
                     });
-
-                    string output = proc.StandardOutput.ReadToEnd();
-                    string errors = proc.StandardError.ReadToEnd();
-                    proc.WaitForExit();
-
-                    System.Diagnostics.Debug.WriteLine($"[OCR OUT] {output}");
-                    System.Diagnostics.Debug.WriteLine($"[OCR ERR] {errors}");
-
-                    if (proc.ExitCode != 0)
-                        return new SiameseOCRResult { Success = false, Error = errors };
-
-                    string resultFile = IOPath.Combine(baseDir, "output", "result.json");
-                    if (!File.Exists(resultFile))
-                        return new SiameseOCRResult { Success = false, Error = "No result.json generated" };
-
-                    var r = JsonConvert.DeserializeObject<SiameseOCRResult>(
-                                File.ReadAllText(resultFile));
-                    r.Success = true;
-                    return r;
+                    proc.StandardOutput.ReadToEnd(); string err = proc.StandardError.ReadToEnd(); proc.WaitForExit();
+                    if (proc.ExitCode != 0) return new SiameseOCRResult { Success = false, Error = err };
+                    string rf = IOPath.Combine(baseDir, "output", "result.json");
+                    if (!File.Exists(rf)) return new SiameseOCRResult { Success = false, Error = "No result.json" };
+                    var r = JsonConvert.DeserializeObject<SiameseOCRResult>(File.ReadAllText(rf));
+                    r.Success = true; return r;
                 });
-
                 if (result.Success)
                 {
-                    txtResult.Text = result.Text;
-                    txtConfidence.Text = $"Confidence: {result.Confidence:F1}%";
-
-                    bool hasModel = Directory.Exists(modelDir) &&
-                                    File.Exists(IOPath.Combine(modelDir, "best_model.pth"));
-
-                    if (result.Confidence >= 80)
-                    {
-                        txtDecision.Text = "HIGH CONFIDENCE";
-                        txtDecision.Foreground = new SolidColorBrush(Colors.Green);
-                    }
-                    else if (result.Confidence >= 60)
-                    {
-                        txtDecision.Text = "MEDIUM CONFIDENCE";
-                        txtDecision.Foreground = new SolidColorBrush(Colors.Orange);
-                    }
-                    else
-                    {
-                        txtDecision.Text = "LOW CONFIDENCE";
-                        txtDecision.Foreground = new SolidColorBrush(Colors.Red);
-                    }
-
-                    txtStatus.Text = hasModel
-                        ? "EasyOCR + Your Trained Model"
-                        : "EasyOCR only — train a model to improve accuracy";
+                    txtResult.Text = result.Text; txtConfidence.Text = $"Confidence: {result.Confidence:F1}%";
+                    if (result.Confidence >= 80) { txtDecision.Text = "HIGH CONFIDENCE"; txtDecision.Foreground = new SolidColorBrush(Colors.Green); }
+                    else if (result.Confidence >= 60) { txtDecision.Text = "MEDIUM CONFIDENCE"; txtDecision.Foreground = new SolidColorBrush(Colors.Orange); }
+                    else { txtDecision.Text = "LOW CONFIDENCE"; txtDecision.Foreground = new SolidColorBrush(Colors.Red); }
+                    txtStatus.Text = result.Method ?? "EasyOCR";
                 }
-                else
-                {
-                    txtResult.Text = $"Error: {result.Error}";
-                    txtStatus.Text = "Inference failed!";
-                    MessageBox.Show($"OCR Error:\n{result.Error}", "Error");
-                }
+                else { txtResult.Text = $"Error: {result.Error}"; txtStatus.Text = "Failed!"; }
             }
-            catch (Exception ex)
-            {
-                txtResult.Text = $"Exception: {ex.Message}";
-                txtStatus.Text = "Failed!";
-            }
-            finally
-            {
-                btnRunInference.IsEnabled = false;
-                btnRunInference.IsEnabled = true;
-                progressBar.IsIndeterminate = false;
-                progressBar.Value = 0;
-            }
+            catch (Exception ex) { txtResult.Text = $"Exception: {ex.Message}"; }
+            finally { btnRunInference.IsEnabled = true; progressBar.IsIndeterminate = false; progressBar.Value = 0; }
         }
 
+        // ════════════════════════════════════════════════════════════════
+        // MISC
+        // ════════════════════════════════════════════════════════════════
 
-        // ========================================
-        // LEGACY METHODS (Keep for compatibility)
-        // ========================================
         private void AuthTimer_Tick(object sender, EventArgs e)
         {
             authTimer.Stop();
-            var reAuth = new ReAuthWindow(currentUser);
-            if (reAuth.ShowDialog() == true && reAuth.IsAuthenticated)
-            {
-                authTimer.Start();
-            }
+            var w = new ReAuthWindow(currentUser);
+            if (w.ShowDialog() == true && w.IsAuthenticated) authTimer.Start();
             else Application.Current.Shutdown();
         }
 
         private void LoadFiles_Click(object sender, RoutedEventArgs e)
         {
-            var dialog = new OpenFileDialog { Filter = "Images|*.png;*.jpg;*.jpeg;*.bmp", Multiselect = true };
-            if (dialog.ShowDialog() == true)
-            {
-                foreach (var file in dialog.FileNames)
-                    if (!imageFiles.Contains(file)) imageFiles.Add(file);
-                UpdateImageList();
-                if (imageFiles.Count > 0)
-                {
-                    currentImageIndex = 0;
-                    ShowImage(imageFiles[0]);
-                }
-                if (isTrainingMode) btnAnnotate.IsEnabled = true;
-            }
-        }
-
-        private void ShowImage(string path)
-        {
-            try
-            {
-                if (isTrainingMode && currentImageAnnotations.Count > 0)
-                    SaveCurrentImageAnnotations();
-
-                annotationCanvas.Children.Clear();
-                currentImageAnnotations.Clear();
-                txtPlaceholder.Visibility = Visibility.Collapsed;
-
-                if (imgDisplay.Source != null)
-                {
-                    var oldSource = imgDisplay.Source;
-                    imgDisplay.Source = null;
-                    if (oldSource is BitmapImage bmp)
-                    {
-                        bmp.StreamSource?.Dispose();
-                    }
-                    GC.Collect();
-                    GC.WaitForPendingFinalizers();
-                }
-
-                var bitmap = new BitmapImage();
-                bitmap.BeginInit();
-                bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                bitmap.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
-                bitmap.UriSource = new Uri(path);
-                bitmap.EndInit();
-                bitmap.Freeze();
-
-                imgDisplay.Source = bitmap;
-                imgDisplay.Visibility = Visibility.Visible;
-
-                Dispatcher.InvokeAsync(() =>
-                {
-                    imgDisplay.UpdateLayout();
-                    UpdateCanvasSize();
-
-                    if (isTrainingMode)
-                    {
-                        annotationCanvas.Visibility = Visibility.Visible;
-                        LoadAnnotationsForCurrentImage();
-                    }
-                }, DispatcherPriority.Loaded);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error loading image: {ex.Message}", "Error");
-            }
-        }
-
-        private void ImageList_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (lstImages.SelectedItem is ListBoxItem item && item.Tag is string path)
-            {
-                currentImageIndex = imageFiles.IndexOf(path);
-                ShowImage(path);
-            }
+            var d = new OpenFileDialog { Filter = "Images|*.png;*.jpg;*.jpeg;*.bmp", Multiselect = true };
+            if (d.ShowDialog() != true) return;
+            foreach (var f in d.FileNames) if (!imageFiles.Contains(f)) imageFiles.Add(f);
+            UpdateImageList();
+            if (imageFiles.Count > 0) { currentImageIndex = 0; ShowImage(imageFiles[0]); lstImages.SelectedIndex = 0; }
+            if (isTrainingMode) btnAnnotate.IsEnabled = true;
         }
 
         private void LoadFolder_Click(object sender, RoutedEventArgs e) => LoadFiles_Click(sender, e);
 
+        private void ImageList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (lstImages.SelectedItem is ListBoxItem li && li.Tag is string path)
+            { currentImageIndex = imageFiles.IndexOf(path); ShowImage(path); }
+        }
+
         private void ToolType_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            try { if (cmbToolType?.SelectedItem is ComboBoxItem item) currentTool = item.Content.ToString(); }
-            catch { }
+            try { if (cmbToolType?.SelectedItem is ComboBoxItem ci) currentTool = ci.Content.ToString(); } catch { }
         }
 
         private void SaveModel_Click(object sender, RoutedEventArgs e)
         {
-            string modelPath = IOPath.Combine(modelsFolder, "siamese_model.pth");
-            if (!File.Exists(modelPath))
-            {
-                MessageBox.Show("No trained Siamese model found!", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            var dialog = new SaveFileDialog { Filter = "PyTorch Model|*.pth", FileName = $"{currentProjectName}_siamese_ocr.pth" };
-            if (dialog.ShowDialog() == true)
-            {
-                try
-                {
-                    File.Copy(modelPath, dialog.FileName, true);
-                    MessageBox.Show($" Model saved successfully!\n\n{dialog.FileName}", "Saved", MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Error saving model: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
+            string mp = IOPath.Combine(modelsFolder, "siamese_model.pth");
+            if (!File.Exists(mp)) { MessageBox.Show("No model found!"); return; }
+            var d = new SaveFileDialog { Filter = "PyTorch Model|*.pth", FileName = $"{currentProjectName}.pth" };
+            if (d.ShowDialog() == true) File.Copy(mp, d.FileName, true);
         }
 
         private void LoadModel_Click(object sender, RoutedEventArgs e)
         {
-            var dialog = new OpenFileDialog { Filter = "PyTorch Model|*.pth" };
-            if (dialog.ShowDialog() == true)
-            {
-                try
-                {
-                    Directory.CreateDirectory(modelsFolder);
-                    File.Copy(dialog.FileName, IOPath.Combine(modelsFolder, "siamese_model.pth"), true);
-                    MessageBox.Show(" Model loaded successfully!", "Loaded", MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Error loading model: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
+            var d = new OpenFileDialog { Filter = "PyTorch Model|*.pth" };
+            if (d.ShowDialog() == true) { Directory.CreateDirectory(modelsFolder); File.Copy(d.FileName, IOPath.Combine(modelsFolder, "siamese_model.pth"), true); }
         }
 
-        private void Accept_Click(object sender, RoutedEventArgs e)
-        {
-            MessageBox.Show(" Result ACCEPTED", "Accepted", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-
-        private void Reject_Click(object sender, RoutedEventArgs e)
-        {
-            MessageBox.Show(" Result REJECTED", "Rejected", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-
-        private void UpdateImageList()
-        {
-            lstImages.Items.Clear();
-            foreach (var path in imageFiles)
-                lstImages.Items.Add(new ListBoxItem { Content = IOPath.GetFileName(path), Tag = path });
-            txtImageCount.Text = $"Images: {imageFiles.Count}";
-        }
-
-        private void AutoDetectCharacters_Click(object sender, RoutedEventArgs e)
-        {
-            MessageBox.Show(
-                "Auto-detection with CRAFT is optional.\n\n" +
-                "For Siamese OCR, you can:\n" +
-                "1. Manually annotate (recommended for accuracy)\n" +
-                "2. Use CRAFT for quick detection (if craft_detector.py exists)\n\n" +
-                "Manual annotation gives better results with few-shot learning!",
-                "Info",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
-        }
+        private void Accept_Click(object sender, RoutedEventArgs e) { }
+        private void Reject_Click(object sender, RoutedEventArgs e) { }
+        private void AutoDetectCharacters_Click(object sender, RoutedEventArgs e) { }
 
         protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
         {
             if (isTrainingMode && currentImageAnnotations.Count > 0) SaveCurrentImageAnnotations();
-            authTimer?.Stop();
-            base.OnClosing(e);
+            authTimer?.Stop(); base.OnClosing(e);
         }
     }
 
@@ -1220,8 +1038,10 @@ namespace PixtechApplication
     {
         public string Label { get; set; }
         public Rect Bounds { get; set; }
+        public double Angle { get; set; }
         public Rectangle VisualRect { get; set; }
         public TextBlock LabelText { get; set; }
+        public Ellipse RotDot { get; set; }  // per-annotation green rotation handle
     }
 
     public class CharacterAnnotation
@@ -1231,6 +1051,7 @@ namespace PixtechApplication
         public double Y { get; set; }
         public double Width { get; set; }
         public double Height { get; set; }
+        public double Angle { get; set; }
         public string ImagePath { get; set; }
     }
 
@@ -1241,5 +1062,6 @@ namespace PixtechApplication
         public double Confidence { get; set; }
         public int CharCount { get; set; }
         public string Error { get; set; }
+        public string Method { get; set; }
     }
 }
