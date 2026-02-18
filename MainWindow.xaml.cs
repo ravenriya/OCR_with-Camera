@@ -37,11 +37,10 @@ namespace PixtechApplication
         private List<AnnotationData> currentImageAnnotations = new List<AnnotationData>();
 
         // ── Template: resize-only cyan box ──────────────────────────────
-        private double templateWidth = 50;
-        private double templateHeight = 50;
+        private double templateWidth = 60;
+        private double templateHeight = 80;
         private double tplLeft = 10, tplTop = 40;
         private Rectangle tplRect;
-        private Rectangle tplHandleBR, tplHandleR, tplHandleB;
         private TextBlock tplLabel;
 
         // Template drag state
@@ -55,10 +54,12 @@ namespace PixtechApplication
         private bool isStamping = false;
         private Rectangle stampPreview = null;
 
-        // ── Per-annotation rotation state ───────────────────────────────
+        // ── Per-annotation rotation + move state ────────────────────────
         private AnnotationData rotatingAnn = null;
         private Point rotDragStart;
         private double rotStartAngle;
+        private AnnotationData movingAnn = null;
+        private double moveStartLeft, moveStartTop;
 
         public MainWindow() : this("Guest") { }
         public MainWindow(string username)
@@ -99,7 +100,7 @@ namespace PixtechApplication
             if (isTrainingMode)
             {
                 txtMode.Text = "TRAINING MODE";
-                txtMode.Background = new SolidColorBrush(Color.FromRgb(40, 167, 69));
+                txtMode.Foreground = new SolidColorBrush(Color.FromRgb(22, 163, 74));
                 pnlInference.Visibility = Visibility.Collapsed;
                 pnlTraining.Visibility = Visibility.Visible;
                 btnAnnotate.Visibility = Visibility.Visible;
@@ -120,81 +121,113 @@ namespace PixtechApplication
             else
             {
                 txtMode.Text = "INFERENCE MODE";
-                txtMode.Background = new SolidColorBrush(Color.FromRgb(255, 165, 0));
+                txtMode.Foreground = new SolidColorBrush(Color.FromRgb(184, 134, 11));
                 pnlInference.Visibility = Visibility.Visible;
                 pnlTraining.Visibility = Visibility.Collapsed;
                 annotationCanvas.Visibility = Visibility.Collapsed;
                 annotationCanvas.Children.Clear();
-                tplRect = null; tplHandleBR = tplHandleR = tplHandleB = null; tplLabel = null;
+                tplRect = null; tplLabel = null;
                 btnAnnotate.IsEnabled = btnStartTraining.IsEnabled = false;
                 txtStatusBar.Text = $"User: {currentUser} | Mode: Inference | Project: {currentProjectName}";
             }
         }
 
         // ════════════════════════════════════════════════════════════════
-        // TEMPLATE — cyan box, resize only, NO rotation
+        // TEMPLATE — cyan box, resize/move, NO rotation
         // ════════════════════════════════════════════════════════════════
 
-        private bool IsTemplateElement(object el) =>
-            el == tplRect || el == tplHandleBR || el == tplHandleR || el == tplHandleB || el == tplLabel;
+        private bool IsTemplateElement(object el) => el == tplRect || el == tplLabel;
 
         private void EnsureTemplate()
         {
             if (tplRect != null) return;
+            // Place template centered on canvas when first created
+            if (annotationCanvas.ActualWidth > 0)
+            {
+                tplLeft = (annotationCanvas.ActualWidth - templateWidth) / 2;
+                tplTop = (annotationCanvas.ActualHeight - templateHeight) / 2;
+            }
             DrawTemplate();
         }
 
         private void RemoveTemplateVisuals()
         {
-            foreach (var el in new UIElement[] { tplRect, tplHandleBR, tplHandleR, tplHandleB, tplLabel })
+            foreach (var el in new UIElement[] { tplRect, tplLabel })
                 if (el != null) annotationCanvas.Children.Remove(el);
-            tplRect = null; tplHandleBR = tplHandleR = tplHandleB = null; tplLabel = null;
+            tplRect = null; tplLabel = null;
         }
+
+        private const double EDGE_THRESH = 10;
 
         private void DrawTemplate()
         {
             RemoveTemplateVisuals();
-            double W = templateWidth, H = templateHeight, L = tplLeft, T = tplTop;
-            const double HS = 9;
-
             tplRect = new Rectangle
             {
-                Width = W,
-                Height = H,
+                Width = templateWidth,
+                Height = templateHeight,
                 Stroke = Brushes.Cyan,
                 StrokeThickness = 2,
                 Fill = new SolidColorBrush(Color.FromArgb(15, 0, 255, 255)),
-                Cursor = Cursors.SizeAll,
                 Tag = "TPL",
             };
-            PutOnCanvas(tplRect, L, T, 900);
-            tplRect.MouseLeftButtonDown += TplBody_Down;
+            PutOnCanvas(tplRect, tplLeft, tplTop, 900);
+            tplRect.MouseLeftButtonDown += TplRect_MouseDown;
+            tplRect.MouseMove += TplRect_MouseMove_Cursor;
             tplRect.MouseLeftButtonUp += TplAny_Up;
 
             tplLabel = new TextBlock
             {
-                Text = $"{(int)W}×{(int)H}",
+                Text = $"{(int)templateWidth}×{(int)templateHeight}",
                 Foreground = Brushes.Cyan,
-                FontSize = 8,
+                FontSize = 9,
                 FontWeight = FontWeights.Bold,
                 IsHitTestVisible = false,
             };
-            PutOnCanvas(tplLabel, L + 2, T + 2, 901);
-
-            tplHandleBR = MakeTplHandle(Cursors.SizeNWSE, "BR");
-            tplHandleR = MakeTplHandle(Cursors.SizeWE, "R");
-            tplHandleB = MakeTplHandle(Cursors.SizeNS, "B");
-            PutOnCanvas(tplHandleBR, L + W - HS, T + H - HS, 902);
-            PutOnCanvas(tplHandleR, L + W - HS, T + H / 2 - HS / 2, 902);
-            PutOnCanvas(tplHandleB, L + W / 2 - HS / 2, T + H - HS, 902);
+            PutOnCanvas(tplLabel, tplLeft + 2, tplTop + 2, 901);
         }
 
-        private Rectangle MakeTplHandle(Cursor cur, string tag)
+        private void TplRect_MouseMove_Cursor(object sender, MouseEventArgs e)
         {
-            var r = new Rectangle { Width = 9, Height = 9, Fill = Brushes.White, Stroke = Brushes.Cyan, StrokeThickness = 1.5, Cursor = cur, Tag = tag };
-            r.MouseLeftButtonDown += TplHandle_Down;
-            r.MouseLeftButtonUp += TplAny_Up;
-            return r;
+            if (isDraggingTpl || isResizingTpl) return;
+            var p = e.GetPosition(tplRect);
+            double W = tplRect.ActualWidth, H = tplRect.ActualHeight;
+            bool onRight = p.X >= W - EDGE_THRESH;
+            bool onBottom = p.Y >= H - EDGE_THRESH;
+            bool onLeft = p.X <= EDGE_THRESH;
+            bool onTop = p.Y <= EDGE_THRESH;
+            if ((onRight && onBottom) || (onLeft && onTop)) tplRect.Cursor = Cursors.SizeNWSE;
+            else if ((onRight && onTop) || (onLeft && onBottom)) tplRect.Cursor = Cursors.SizeNESW;
+            else if (onRight || onLeft) tplRect.Cursor = Cursors.SizeWE;
+            else if (onBottom || onTop) tplRect.Cursor = Cursors.SizeNS;
+            else tplRect.Cursor = Cursors.SizeAll;
+        }
+
+        private void TplRect_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            var p = e.GetPosition(tplRect);
+            double W = tplRect.ActualWidth, H = tplRect.ActualHeight;
+            bool onRight = p.X >= W - EDGE_THRESH;
+            bool onBottom = p.Y >= H - EDGE_THRESH;
+            bool onLeft = p.X <= EDGE_THRESH;
+            bool onTop = p.Y <= EDGE_THRESH;
+            bool onEdge = onRight || onBottom || onLeft || onTop;
+
+            dragStart = e.GetPosition(annotationCanvas);
+            dragStartW = templateWidth; dragStartH = templateHeight;
+            dragStartL = tplLeft; dragStartT = tplTop;
+
+            if (onEdge)
+            {
+                isResizingTpl = true;
+                resizeDir = $"{(onRight ? "R" : "")}{(onLeft ? "L" : "")}{(onBottom ? "B" : "")}{(onTop ? "T" : "")}";
+            }
+            else
+            {
+                isDraggingTpl = true;
+            }
+            tplRect.CaptureMouse();
+            e.Handled = true;
         }
 
         private void PutOnCanvas(UIElement el, double l, double t, int z)
@@ -206,32 +239,10 @@ namespace PixtechApplication
         private void UpdateTemplate()
         {
             if (tplRect == null) return;
-            double W = templateWidth, H = templateHeight, L = tplLeft, T = tplTop;
-            const double HS = 9;
-            Canvas.SetLeft(tplRect, L); Canvas.SetTop(tplRect, T);
-            tplRect.Width = W; tplRect.Height = H;
-            Canvas.SetLeft(tplLabel, L + 2); Canvas.SetTop(tplLabel, T + 2);
-            tplLabel.Text = $"{(int)W}×{(int)H}";
-            Canvas.SetLeft(tplHandleBR, L + W - HS); Canvas.SetTop(tplHandleBR, T + H - HS);
-            Canvas.SetLeft(tplHandleR, L + W - HS); Canvas.SetTop(tplHandleR, T + H / 2 - HS / 2);
-            Canvas.SetLeft(tplHandleB, L + W / 2 - HS / 2); Canvas.SetTop(tplHandleB, T + H - HS);
-        }
-
-        private void TplBody_Down(object sender, MouseButtonEventArgs e)
-        {
-            isDraggingTpl = true;
-            dragStart = e.GetPosition(annotationCanvas);
-            dragStartL = tplLeft; dragStartT = tplTop;
-            tplRect.CaptureMouse(); e.Handled = true;
-        }
-
-        private void TplHandle_Down(object sender, MouseButtonEventArgs e)
-        {
-            isResizingTpl = true;
-            resizeDir = (sender as FrameworkElement)?.Tag?.ToString() ?? "BR";
-            dragStart = e.GetPosition(annotationCanvas);
-            dragStartW = templateWidth; dragStartH = templateHeight;
-            (sender as UIElement)?.CaptureMouse(); e.Handled = true;
+            Canvas.SetLeft(tplRect, tplLeft); Canvas.SetTop(tplRect, tplTop);
+            tplRect.Width = templateWidth; tplRect.Height = templateHeight;
+            Canvas.SetLeft(tplLabel, tplLeft + 2); Canvas.SetTop(tplLabel, tplTop + 2);
+            tplLabel.Text = $"{(int)templateWidth}×{(int)templateHeight}";
         }
 
         private void TplAny_Up(object sender, MouseButtonEventArgs e)
@@ -248,13 +259,9 @@ namespace PixtechApplication
         private void AnnotationCanvas_MouseDown(object sender, MouseButtonEventArgs e)
         {
             if (!isTrainingMode || e.ChangedButton != MouseButton.Left) return;
-
-            // Block if clicking template or existing annotation visuals
             if (e.OriginalSource is UIElement src && IsTemplateElement(src)) return;
             if (e.OriginalSource is Rectangle existR && currentImageAnnotations.Any(a => a.VisualRect == existR)) return;
-            if (e.OriginalSource is Ellipse existE && currentImageAnnotations.Any(a => a.RotDot == existE)) return;
 
-            // Begin drag-stamp: draw a preview rect that follows the mouse
             isStamping = true;
             var pt = e.GetPosition(annotationCanvas);
             stampPreview = new Rectangle
@@ -279,7 +286,6 @@ namespace PixtechApplication
             if (!isTrainingMode) return;
             var pos = e.GetPosition(annotationCanvas);
 
-            // Template move
             if (isDraggingTpl)
             {
                 tplLeft = dragStartL + (pos.X - dragStart.X);
@@ -287,16 +293,16 @@ namespace PixtechApplication
                 UpdateTemplate(); return;
             }
 
-            // Template resize
             if (isResizingTpl)
             {
                 double dx = pos.X - dragStart.X, dy = pos.Y - dragStart.Y;
-                if (resizeDir == "BR" || resizeDir == "R") templateWidth = Math.Max(15, dragStartW + dx);
-                if (resizeDir == "BR" || resizeDir == "B") templateHeight = Math.Max(15, dragStartH + dy);
+                if (resizeDir.Contains("R")) templateWidth = Math.Max(20, dragStartW + dx);
+                if (resizeDir.Contains("L")) { templateWidth = Math.Max(20, dragStartW - dx); tplLeft = dragStartL + dx; }
+                if (resizeDir.Contains("B")) templateHeight = Math.Max(20, dragStartH + dy);
+                if (resizeDir.Contains("T")) { templateHeight = Math.Max(20, dragStartH - dy); tplTop = dragStartT + dy; }
                 UpdateTemplate(); return;
             }
 
-            // Stamp preview follows mouse
             if (isStamping && stampPreview != null)
             {
                 Canvas.SetLeft(stampPreview, pos.X - templateWidth / 2);
@@ -304,7 +310,18 @@ namespace PixtechApplication
                 return;
             }
 
-            // Per-annotation rotation
+            if (movingAnn != null)
+            {
+                double nl = moveStartLeft + (pos.X - rotDragStart.X);
+                double nt = moveStartTop + (pos.Y - rotDragStart.Y);
+                Canvas.SetLeft(movingAnn.VisualRect, nl);
+                Canvas.SetTop(movingAnn.VisualRect, nt);
+                Canvas.SetLeft(movingAnn.LabelText, nl + LABEL_OFFSET);
+                Canvas.SetTop(movingAnn.LabelText, nt + LABEL_OFFSET);
+                movingAnn.Bounds = new Rect(nl, nt, movingAnn.Bounds.Width, movingAnn.Bounds.Height);
+                return;
+            }
+
             if (rotatingAnn != null)
             {
                 double cx = Canvas.GetLeft(rotatingAnn.VisualRect) + rotatingAnn.VisualRect.Width / 2;
@@ -314,30 +331,15 @@ namespace PixtechApplication
                 double newAngle = (rotStartAngle + (a1 - a0) * 180.0 / Math.PI + 360) % 360;
                 rotatingAnn.Angle = newAngle;
                 ((RotateTransform)rotatingAnn.VisualRect.RenderTransform).Angle = newAngle;
-                // Keep rotation dot above rect center
-                if (rotatingAnn.RotDot != null)
-                {
-                    Canvas.SetLeft(rotatingAnn.RotDot, cx - 6);
-                    Canvas.SetTop(rotatingAnn.RotDot, Canvas.GetTop(rotatingAnn.VisualRect) - 18);
-                }
             }
         }
 
         private void AnnotationCanvas_MouseUp(object sender, MouseButtonEventArgs e)
         {
-            // Finish template ops
             isDraggingTpl = isResizingTpl = false;
             tplRect?.ReleaseMouseCapture();
+            rotatingAnn = null; movingAnn = null;
 
-            // Finish rotation
-            if (rotatingAnn != null)
-            {
-                rotatingAnn.RotDot?.ReleaseMouseCapture();
-                rotatingAnn = null;
-                SaveCurrentImageAnnotations();
-            }
-
-            // Finish stamp — drop rect where mouse is, show label box
             if (isStamping)
             {
                 isStamping = false;
@@ -352,21 +354,59 @@ namespace PixtechApplication
                 }
                 return;
             }
-
             annotationCanvas.ReleaseMouseCapture();
             Mouse.Capture(null);
         }
 
         // ════════════════════════════════════════════════════════════════
-        // STAMP — green rect + rotation dot + inline label textbox
+        // STAMP — green rect + inline label textbox
         // ════════════════════════════════════════════════════════════════
+
+        private void WireAnnotationRect(Rectangle rect, AnnotationData ann)
+        {
+            rect.MouseLeftButtonDown += (s, ev) =>
+            {
+                var cp = ev.GetPosition(rect);
+                double rw = rect.ActualWidth, rh = rect.ActualHeight;
+                const double mg = 14;
+                bool edge = cp.X < mg || cp.X > rw - mg || cp.Y < mg || cp.Y > rh - mg;
+                rotDragStart = ev.GetPosition(annotationCanvas);
+                if (edge)
+                {
+                    rotatingAnn = ann;
+                    rotStartAngle = ann.Angle;
+                }
+                else
+                {
+                    movingAnn = ann;
+                    moveStartLeft = Canvas.GetLeft(rect);
+                    moveStartTop = Canvas.GetTop(rect);
+                }
+                rect.CaptureMouse(); ev.Handled = true;
+            };
+            rect.MouseLeftButtonUp += (s, ev) =>
+            {
+                rect.ReleaseMouseCapture();
+                rotatingAnn = null; movingAnn = null;
+                SaveCurrentImageAnnotations(); ev.Handled = true;
+            };
+            // Cursor hint
+            rect.MouseMove += (s, ev) =>
+            {
+                if (rotatingAnn != null || movingAnn != null) return;
+                var cp = ev.GetPosition(rect);
+                double rw = rect.ActualWidth, rh = rect.ActualHeight;
+                const double mg = 14;
+                bool edge = cp.X < mg || cp.X > rw - mg || cp.Y < mg || cp.Y > rh - mg;
+                rect.Cursor = edge ? Cursors.SizeAll : Cursors.Hand;
+            };
+        }
 
         private void StampAnnotation(Point center)
         {
             double x = center.X - templateWidth / 2.0;
             double y = center.Y - templateHeight / 2.0;
 
-            // Green rect
             var rect = new Rectangle
             {
                 Width = templateWidth,
@@ -376,11 +416,11 @@ namespace PixtechApplication
                 Fill = new SolidColorBrush(Color.FromArgb(30, 0, 255, 0)),
                 RenderTransformOrigin = new Point(0.5, 0.5),
                 RenderTransform = new RotateTransform(0),
+                Cursor = Cursors.Hand,
             };
             rect.MouseRightButtonUp += AnnotationRect_RightClick;
             PutOnCanvas(rect, x, y, 100);
 
-            // Label (starts empty)
             var lbl = new TextBlock
             {
                 Text = "",
@@ -393,19 +433,6 @@ namespace PixtechApplication
             };
             PutOnCanvas(lbl, x + LABEL_OFFSET, y + LABEL_OFFSET, 101);
 
-            // Green rotation dot above this rect
-            var rotDot = new Ellipse
-            {
-                Width = 12,
-                Height = 12,
-                Fill = Brushes.Lime,
-                Stroke = Brushes.DarkGreen,
-                StrokeThickness = 1.5,
-                Cursor = Cursors.Hand,
-            };
-            PutOnCanvas(rotDot, x + templateWidth / 2 - 6, y - 18, 102);
-
-            // Build annotation object
             var ann = new AnnotationData
             {
                 Label = "",
@@ -413,25 +440,12 @@ namespace PixtechApplication
                 Angle = 0,
                 VisualRect = rect,
                 LabelText = lbl,
-                RotDot = rotDot,
+                RotDot = null,
             };
 
-            // Wire rotation dot
-            rotDot.MouseLeftButtonDown += (s, ev) =>
-            {
-                rotatingAnn = ann;
-                rotDragStart = ev.GetPosition(annotationCanvas);
-                rotStartAngle = ann.Angle;
-                rotDot.CaptureMouse(); ev.Handled = true;
-            };
-            rotDot.MouseLeftButtonUp += (s, ev) =>
-            {
-                rotDot.ReleaseMouseCapture();
-                rotatingAnn = null;
-                SaveCurrentImageAnnotations(); ev.Handled = true;
-            };
+            WireAnnotationRect(rect, ann);
 
-            // Inline textbox inside top-left of rect
+            // Inline textbox
             var tb = new TextBox
             {
                 Width = Math.Min(templateWidth - 4, 30),
@@ -445,9 +459,10 @@ namespace PixtechApplication
                 TextAlignment = TextAlignment.Center,
                 VerticalContentAlignment = VerticalAlignment.Center,
                 Padding = new Thickness(0),
+                IsHitTestVisible = true,
             };
             PutOnCanvas(tb, x + 2, y + 2, 200);
-            Dispatcher.InvokeAsync(() => tb.Focus(), System.Windows.Threading.DispatcherPriority.Input);
+            Dispatcher.InvokeAsync(() => tb.Focus(), DispatcherPriority.Input);
 
             void Confirm()
             {
@@ -457,7 +472,6 @@ namespace PixtechApplication
                 {
                     annotationCanvas.Children.Remove(rect);
                     annotationCanvas.Children.Remove(lbl);
-                    annotationCanvas.Children.Remove(rotDot);
                     return;
                 }
                 lbl.Text = ann.Label = label;
@@ -474,14 +488,10 @@ namespace PixtechApplication
                     annotationCanvas.Children.Remove(tb);
                     annotationCanvas.Children.Remove(rect);
                     annotationCanvas.Children.Remove(lbl);
-                    annotationCanvas.Children.Remove(rotDot);
                     ev.Handled = true;
                 }
             };
-            tb.LostFocus += (s, _) =>
-            {
-                if (annotationCanvas.Children.Contains(tb)) Confirm();
-            };
+            tb.LostFocus += (s, _) => { if (annotationCanvas.Children.Contains(tb)) Confirm(); };
         }
 
         // ════════════════════════════════════════════════════════════════
@@ -516,14 +526,13 @@ namespace PixtechApplication
                     Padding = new Thickness(0),
                 };
                 PutOnCanvas(tb, rx + 2, ry + 2, 200);
-                Dispatcher.InvokeAsync(() => { tb.Focus(); tb.SelectAll(); }, System.Windows.Threading.DispatcherPriority.Input);
-
+                Dispatcher.InvokeAsync(() => { tb.Focus(); tb.SelectAll(); }, DispatcherPriority.Input);
                 void Save()
                 {
                     if (!annotationCanvas.Children.Contains(tb)) return;
                     annotationCanvas.Children.Remove(tb);
-                    string newLabel = tb.Text.Trim().ToUpper();
-                    if (!string.IsNullOrEmpty(newLabel)) { ann.Label = newLabel; ann.LabelText.Text = newLabel; }
+                    string nl = tb.Text.Trim().ToUpper();
+                    if (!string.IsNullOrEmpty(nl)) { ann.Label = nl; ann.LabelText.Text = nl; }
                     SaveCurrentImageAnnotations(); UpdateMasterAnnotationFile();
                 }
                 tb.KeyDown += (ts, te) => { if (te.Key == Key.Enter || te.Key == Key.Escape) { Save(); te.Handled = true; } };
@@ -535,7 +544,6 @@ namespace PixtechApplication
             {
                 annotationCanvas.Children.Remove(ann.VisualRect);
                 annotationCanvas.Children.Remove(ann.LabelText);
-                if (ann.RotDot != null) annotationCanvas.Children.Remove(ann.RotDot);
                 currentImageAnnotations.Remove(ann);
                 SaveCurrentImageAnnotations(); UpdateMasterAnnotationFile(); UpdateAnnotationStatus();
             };
@@ -579,7 +587,6 @@ namespace PixtechApplication
 
         private void LoadAnnotationsForCurrentImage()
         {
-            // Remove everything except template visuals
             foreach (var el in annotationCanvas.Children.OfType<UIElement>().ToList())
                 if (!IsTemplateElement(el)) annotationCanvas.Children.Remove(el);
             currentImageAnnotations.Clear();
@@ -625,17 +632,6 @@ namespace PixtechApplication
                     };
                     PutOnCanvas(lbl, x + LABEL_OFFSET, y + LABEL_OFFSET, 101);
 
-                    var rotDot = new Ellipse
-                    {
-                        Width = 12,
-                        Height = 12,
-                        Fill = Brushes.Lime,
-                        Stroke = Brushes.DarkGreen,
-                        StrokeThickness = 1.5,
-                        Cursor = Cursors.Hand,
-                    };
-                    PutOnCanvas(rotDot, x + w / 2 - 6, y - 18, 102);
-
                     var ann = new AnnotationData
                     {
                         Label = a.Label,
@@ -643,22 +639,10 @@ namespace PixtechApplication
                         Angle = a.Angle,
                         VisualRect = rect,
                         LabelText = lbl,
-                        RotDot = rotDot,
+                        RotDot = null,
                     };
                     currentImageAnnotations.Add(ann);
-
-                    rotDot.MouseLeftButtonDown += (s, ev) =>
-                    {
-                        rotatingAnn = ann;
-                        rotDragStart = ev.GetPosition(annotationCanvas);
-                        rotStartAngle = ann.Angle;
-                        rotDot.CaptureMouse(); ev.Handled = true;
-                    };
-                    rotDot.MouseLeftButtonUp += (s, ev) =>
-                    {
-                        rotDot.ReleaseMouseCapture(); rotatingAnn = null;
-                        SaveCurrentImageAnnotations(); ev.Handled = true;
-                    };
+                    WireAnnotationRect(rect, ann);
                 }
             }
             catch (Exception ex) { Debug.WriteLine($"Load: {ex.Message}"); }
@@ -690,13 +674,16 @@ namespace PixtechApplication
             => IOPath.Combine(annotationsFolder, IOPath.GetFileNameWithoutExtension(imgPath) + ".json");
 
         // ════════════════════════════════════════════════════════════════
-        // IMAGE DISPLAY + LIST (with right-click remove from UI)
+        // IMAGE DISPLAY + LIST
         // ════════════════════════════════════════════════════════════════
 
         private void UpdateCanvasSize()
         {
             if (imgDisplay.Source != null && imgDisplay.ActualWidth > 0)
-            { annotationCanvas.Width = imgDisplay.ActualWidth; annotationCanvas.Height = imgDisplay.ActualHeight; }
+            {
+                annotationCanvas.Width = imgDisplay.ActualWidth;
+                annotationCanvas.Height = imgDisplay.ActualHeight;
+            }
         }
 
         private void ShowImage(string path)
@@ -723,8 +710,17 @@ namespace PixtechApplication
                 Dispatcher.InvokeAsync(() =>
                 {
                     imgDisplay.UpdateLayout(); UpdateCanvasSize();
-                    if (isTrainingMode) { annotationCanvas.Visibility = Visibility.Visible; LoadAnnotationsForCurrentImage(); EnsureTemplate(); }
-                }, System.Windows.Threading.DispatcherPriority.Loaded);
+                    if (isTrainingMode)
+                    {
+                        annotationCanvas.Visibility = Visibility.Visible;
+                        LoadAnnotationsForCurrentImage();
+                        // Reset template position to center of canvas for new image
+                        tplLeft = (annotationCanvas.ActualWidth - templateWidth) / 2;
+                        tplTop = (annotationCanvas.ActualHeight - templateHeight) / 2;
+                        RemoveTemplateVisuals();
+                        DrawTemplate();
+                    }
+                }, DispatcherPriority.Loaded);
             }
             catch (Exception ex) { MessageBox.Show($"Error: {ex.Message}"); }
         }
@@ -735,7 +731,6 @@ namespace PixtechApplication
             foreach (var path in imageFiles)
             {
                 var item = new ListBoxItem { Content = IOPath.GetFileName(path), Tag = path };
-                // Right-click to remove from UI (does NOT delete the file)
                 var menu = new ContextMenu();
                 var removeItem = new MenuItem { Header = "❌ Remove from list" };
                 string capturedPath = path;
@@ -786,7 +781,7 @@ namespace PixtechApplication
                 var a = JsonConvert.DeserializeObject<List<CharacterAnnotation>>(File.ReadAllText(master));
                 if (a != null && a.Count > 0)
                 {
-                    txtAnnotationStatus.Text = $" {a.Count} annotations\n{a.Select(x => x.ImagePath).Distinct().Count()} images | {a.Select(x => x.Label).Distinct().Count()} unique characters";
+                    txtAnnotationStatus.Text = $" {a.Count} annotations\n{a.Select(x => x.ImagePath).Distinct().Count()} images | {a.Select(x => x.Label).Distinct().Count()} unique chars";
                     txtAnnotationStatus.Foreground = new SolidColorBrush(Colors.Green);
                     btnStartTraining.IsEnabled = true;
                     if (btnStartTrainingBig != null) btnStartTrainingBig.IsEnabled = true;
@@ -861,7 +856,7 @@ namespace PixtechApplication
             int epochs = 50, batch = 32;
             if (txtEpochs != null && int.TryParse(txtEpochs.Text, out int e2)) epochs = e2;
             if (txtBatchSize != null && int.TryParse(txtBatchSize.Text, out int b2)) batch = b2;
-            if (!File.Exists(trainScript)) { MessageBox.Show($"train_last_layer.py not found"); return; }
+            if (!File.Exists(trainScript)) { MessageBox.Show("train_last_layer.py not found"); return; }
             if (!File.Exists(annoFile)) { MessageBox.Show("No annotations found!"); return; }
             btnStartTraining.IsEnabled = false;
             if (btnStartTrainingBig != null) btnStartTrainingBig.IsEnabled = false;
@@ -904,7 +899,8 @@ namespace PixtechApplication
                             {
                                 double.TryParse(a.Data.Split(':')[1], System.Globalization.NumberStyles.Float,
                                     System.Globalization.CultureInfo.InvariantCulture, out double acc);
-                                progressBarTraining.Value = 100; txtTrainingStatus.Text = $"Done! Val: {acc:F1}%";
+                                progressBarTraining.Value = 100;
+                                txtTrainingStatus.Text = $"Done! Val: {acc:F1}%";
                                 MessageBox.Show($"Training complete!\nVal accuracy: {acc:F1}%\n\nSwitch to Inference Mode to test.", "Done");
                             }
                         });
@@ -933,8 +929,10 @@ namespace PixtechApplication
             string imgPath = (lstImages.SelectedItem is ListBoxItem li && li.Tag is string p) ? p : imageFiles[currentImageIndex];
             string modelDir = IOPath.Combine(currentProjectFolder, "TrainedModel");
             string mdArg = Directory.Exists(modelDir) ? $"\"{modelDir}\"" : "\"\"";
-            btnRunInference.IsEnabled = false; progressBar.IsIndeterminate = true;
-            txtResult.Text = "Running OCR..."; txtStatus.Text = "Loading EasyOCR...";
+            btnRunInference.IsEnabled = false;
+            progressBar.IsIndeterminate = true;
+            txtResult.Text = "Running OCR...";
+            txtStatus.Text = "Loading EasyOCR...";
             try
             {
                 string python = @"C:\Users\Pixtech Workstation\AppData\Local\Programs\Python\Python311\python.exe";
@@ -953,7 +951,9 @@ namespace PixtechApplication
                         WorkingDirectory = baseDir,
                         StandardOutputEncoding = System.Text.Encoding.UTF8,
                     });
-                    proc.StandardOutput.ReadToEnd(); string err = proc.StandardError.ReadToEnd(); proc.WaitForExit();
+                    proc.StandardOutput.ReadToEnd();
+                    string err = proc.StandardError.ReadToEnd();
+                    proc.WaitForExit();
                     if (proc.ExitCode != 0) return new SiameseOCRResult { Success = false, Error = err };
                     string rf = IOPath.Combine(baseDir, "output", "result.json");
                     if (!File.Exists(rf)) return new SiameseOCRResult { Success = false, Error = "No result.json" };
@@ -962,7 +962,8 @@ namespace PixtechApplication
                 });
                 if (result.Success)
                 {
-                    txtResult.Text = result.Text; txtConfidence.Text = $"Confidence: {result.Confidence:F1}%";
+                    txtResult.Text = result.Text;
+                    txtConfidence.Text = $"Confidence: {result.Confidence:F1}%";
                     if (result.Confidence >= 80) { txtDecision.Text = "HIGH CONFIDENCE"; txtDecision.Foreground = new SolidColorBrush(Colors.Green); }
                     else if (result.Confidence >= 60) { txtDecision.Text = "MEDIUM CONFIDENCE"; txtDecision.Foreground = new SolidColorBrush(Colors.Orange); }
                     else { txtDecision.Text = "LOW CONFIDENCE"; txtDecision.Foreground = new SolidColorBrush(Colors.Red); }
@@ -1041,7 +1042,7 @@ namespace PixtechApplication
         public double Angle { get; set; }
         public Rectangle VisualRect { get; set; }
         public TextBlock LabelText { get; set; }
-        public Ellipse RotDot { get; set; }  // per-annotation green rotation handle
+        public Ellipse RotDot { get; set; }
     }
 
     public class CharacterAnnotation
