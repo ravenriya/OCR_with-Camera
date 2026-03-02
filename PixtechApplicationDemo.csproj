@@ -31,10 +31,4 @@
 	<ItemGroup>
 	  <Folder Include="bin\Debug\net10.0-windows\Projects\" />
 	</ItemGroup>
-
-	<ItemGroup>
-	  <None Include="bin\Debug\net10.0-windows\Auto segment.py" />
-	  <None Include="bin\Debug\net10.0-windows\Character classifier inference.py" />
-	  <None Include="bin\Debug\net10.0-windows\ocr_engine.py" />
-	</ItemGroup>
 </Project>

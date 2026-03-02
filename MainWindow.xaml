@@ -9,7 +9,6 @@
         FontFamily="Segoe UI">
 
     <Window.Resources>
-
         <Style x:Key="BtnYellow" TargetType="Button">
             <Setter Property="Background" Value="#F5C400"/>
             <Setter Property="Foreground" Value="#111111"/>
@@ -102,7 +101,7 @@
 
         <Style x:Key="BtnOrange" TargetType="Button">
             <Setter Property="Background" Value="#FFF3E0"/>
-            <Setter Property="Foreground" Value="#E65100"/>
+            <Setter Property="Foreground" Value="#E15100"/>
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="Height" Value="32"/>
             <Setter Property="BorderThickness" Value="1"/>
@@ -133,7 +132,7 @@
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="Height" Value="32"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="BorderBrush" Value="#FECACA"/>
+            <Setter Property="BorderBrush" Value="Gray"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Template">
                 <Setter.Value>
@@ -262,7 +261,6 @@
                 </Setter.Value>
             </Setter>
         </Style>
-
     </Window.Resources>
 
     <Grid>
@@ -281,16 +279,13 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-
                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Image Source="Pixtech.png" Height="34" Width="34" Margin="0,0,10,0"
-                           RenderOptions.BitmapScalingMode="HighQuality"/>
+                    <Image Source="Pixtech.png" Height="34" Width="34" Margin="0,0,10,0" RenderOptions.BitmapScalingMode="HighQuality"/>
                     <StackPanel VerticalAlignment="Center">
                         <TextBlock Text="Pixtech" Foreground="#1A1A1A" FontSize="20" FontWeight="Bold"/>
                         <TextBlock Text="Deep Learning Studio" Foreground="#AAAAAA" FontSize="9"/>
                     </StackPanel>
                 </StackPanel>
-
                 <Border Grid.Column="1" Background="#F4F4F4" BorderBrush="#E0E0E0" BorderThickness="1"
                         CornerRadius="20" Height="36" Width="300" HorizontalAlignment="Center">
                     <Grid>
@@ -308,11 +303,9 @@
                                      HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
                     </Grid>
                 </Border>
-
                 <Border Grid.Column="2" Background="#FFF8DC" BorderBrush="#F5C400" BorderThickness="1"
                         CornerRadius="4" Padding="14,6" VerticalAlignment="Center">
-                    <TextBlock x:Name="txtMode" Text="INFERENCE MODE"
-                               Foreground="#B8860B" FontSize="11" FontWeight="Bold"/>
+                    <TextBlock x:Name="txtMode" Text="INFERENCE MODE" Foreground="#B8860B" FontSize="11" FontWeight="Bold"/>
                 </Border>
             </Grid>
         </Border>
@@ -322,16 +315,6 @@
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="20,0">
                 <Button x:Name="btnLoadFiles"  Content="📂  Load Files"  Style="{StaticResource BtnGray}" Click="LoadFiles_Click"  Margin="0,0,8,0"/>
                 <Button x:Name="btnLoadFolder" Content="📁  Load Folder" Style="{StaticResource BtnGray}" Click="LoadFolder_Click" Margin="0,0,16,0"/>
-                <Border Width="1" Background="#E5E5E5" Margin="0,8"/>
-                <Button x:Name="btnAutoDetect" Content="⚡  Auto-Detect" Style="{StaticResource BtnGray}" Click="AutoDetectCharacters_Click" Margin="16,0,16,0"/>
-                <Border Width="1" Background="#E5E5E5" Margin="0,8"/>
-                <TextBlock Text="Tool:" Foreground="#AAAAAA" FontSize="12" VerticalAlignment="Center" Margin="16,0,8,0"/>
-                <ComboBox x:Name="cmbToolType" Width="120" Height="32" FontSize="12"
-                          SelectionChanged="ToolType_SelectionChanged">
-                    <ComboBoxItem Content="OCR" IsSelected="True"/>
-                    <ComboBoxItem Content="Classification"/>
-                    <ComboBoxItem Content="Detection"/>
-                </ComboBox>
                 <Button x:Name="btnAnnotate"         Content="✏  Annotate"       Style="{StaticResource BtnGray}"   Click="Annotate_Click"         Visibility="Collapsed" IsEnabled="False" Margin="16,0,8,0"/>
                 <Button x:Name="btnCheckAnnotations" Content="↻  Refresh"         Style="{StaticResource BtnGray}"   Click="CheckAnnotations_Click" Visibility="Collapsed" Margin="0,0,8,0"/>
                 <Button x:Name="btnStartTraining"    Content="🚀  Start Training" Style="{StaticResource BtnYellow}" Click="StartTraining_Click"    Visibility="Collapsed" IsEnabled="False"/>
@@ -346,7 +329,7 @@
                 <ColumnDefinition Width="300"/>
             </Grid.ColumnDefinitions>
 
-            <!-- LEFT: Image list -->
+            <!-- LEFT -->
             <Border Grid.Column="0" Background="#FFFFFF" BorderBrush="#E5E5E5" BorderThickness="0,0,1,0">
                 <Grid>
                     <Grid.RowDefinitions>
@@ -355,22 +338,16 @@
                         <RowDefinition Height="30"/>
                     </Grid.RowDefinitions>
                     <Border Grid.Row="0" Background="#FAFAFA" BorderBrush="#E5E5E5" BorderThickness="0,0,0,1">
-                        <TextBlock Text="IMAGES" Foreground="#F5C400" FontSize="10" FontWeight="Bold"
-                                   VerticalAlignment="Center" Margin="14,0"/>
+                        <TextBlock Text="IMAGES" Foreground="#F5C400" FontSize="10" FontWeight="Bold" VerticalAlignment="Center" Margin="14,0"/>
                     </Border>
-                    <ListBox Grid.Row="1" x:Name="lstImages"
-                             Style="{StaticResource LbLight}"
-                             ItemContainerStyle="{StaticResource LbItem}"
-                             SelectionChanged="ImageList_SelectionChanged"/>
+                    <ListBox Grid.Row="1" x:Name="lstImages" Style="{StaticResource LbLight}" ItemContainerStyle="{StaticResource LbItem}" SelectionChanged="ImageList_SelectionChanged"/>
                     <Border Grid.Row="2" Background="#FAFAFA" BorderBrush="#E5E5E5" BorderThickness="0,1,0,0" Padding="14,0">
-                        <TextBlock x:Name="txtImageCount" Text="Images: 0"
-                                   Foreground="#AAAAAA" FontSize="11" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="txtImageCount" Text="Images: 0" Foreground="#AAAAAA" FontSize="11" VerticalAlignment="Center"/>
                     </Border>
                 </Grid>
             </Border>
 
-            <!-- CENTER: Image display -->
-            <!-- CENTER: Image display -->
+            <!-- CENTER -->
             <Border Grid.Column="1" Background="#E8E8E8">
                 <Grid>
                     <Grid.RowDefinitions>
@@ -378,34 +355,27 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
                     <Border Grid.Row="0" Background="#FAFAFA" BorderBrush="#E5E5E5" BorderThickness="0,0,0,1">
-                        <TextBlock Text="IMAGE DISPLAY" Foreground="#F5C400" FontSize="10" FontWeight="Bold"
-                                   VerticalAlignment="Center" Margin="14,0"/>
+                        <TextBlock Text="IMAGE DISPLAY" Foreground="#F5C400" FontSize="10" FontWeight="Bold" VerticalAlignment="Center" Margin="14,0"/>
                     </Border>
                     <Grid Grid.Row="1" x:Name="imageContainer">
-                        <Image x:Name="imgDisplay"
-                               Stretch="Uniform"
-                               StretchDirection="Both"
+                        <Image x:Name="imgDisplay" Stretch="Uniform" StretchDirection="Both"
                                RenderOptions.BitmapScalingMode="HighQuality"
                                MaxWidth="{Binding ActualWidth, ElementName=imageContainer}"
                                MaxHeight="{Binding ActualHeight, ElementName=imageContainer}"/>
-                        <Canvas x:Name="annotationCanvas"
-                                Background="Transparent"
-                                Visibility="Collapsed"
+                        <Canvas x:Name="annotationCanvas" Background="Transparent" Visibility="Collapsed"
                                 MouseLeftButtonDown="AnnotationCanvas_MouseDown"
                                 MouseMove="AnnotationCanvas_MouseMove"
                                 MouseLeftButtonUp="AnnotationCanvas_MouseUp"/>
                         <StackPanel x:Name="txtPlaceholder" HorizontalAlignment="Center" VerticalAlignment="Center">
                             <TextBlock Text="📂" FontSize="48" HorizontalAlignment="Center" Foreground="#CCCCCC"/>
-                            <TextBlock Text="Load images to begin" Foreground="#BBBBBB" FontSize="14"
-                                       HorizontalAlignment="Center" Margin="0,10,0,4"/>
-                            <TextBlock Text="PNG  ·  JPG  ·  BMP" Foreground="#CCCCCC" FontSize="11"
-                                       HorizontalAlignment="Center"/>
+                            <TextBlock Text="Load images to begin" Foreground="#BBBBBB" FontSize="14" HorizontalAlignment="Center" Margin="0,10,0,4"/>
+                            <TextBlock Text="PNG  ·  JPG  ·  BMP" Foreground="#CCCCCC" FontSize="11" HorizontalAlignment="Center"/>
                         </StackPanel>
                     </Grid>
                 </Grid>
             </Border>
 
-            <!-- RIGHT: Training + Inference panels -->
+            <!-- RIGHT -->
             <Border Grid.Column="2" Background="#FFFFFF" BorderBrush="#E5E5E5" BorderThickness="1,0,0,0">
                 <Grid>
 
@@ -413,22 +383,18 @@
                     <ScrollViewer x:Name="pnlTraining" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
                         <StackPanel Margin="16,16,16,20">
                             <TextBlock Text="TRAINING SETUP" Foreground="#F5C400" FontSize="10" FontWeight="Bold" Margin="0,0,0,12"/>
-                            <Border Background="#FFFBEB" BorderBrush="#F5C400" BorderThickness="1"
-                                    CornerRadius="4" Padding="10,8" Margin="0,0,0,12">
+                            <Border Background="#FFFBEB" BorderBrush="#F5C400" BorderThickness="1" CornerRadius="4" Padding="10,8" Margin="0,0,0,12">
                                 <StackPanel>
                                     <TextBlock Text="ANNOTATION STATUS" Foreground="#B8860B" FontSize="9" FontWeight="Bold" Margin="0,0,0,4"/>
-                                    <TextBlock x:Name="txtAnnotationStatus" Text=" No annotations yet"
-                                               Foreground="#DC2626" FontSize="12" TextWrapping="Wrap"/>
+                                    <TextBlock x:Name="txtAnnotationStatus" Text=" No annotations yet" Foreground="#DC2626" FontSize="12" TextWrapping="Wrap"/>
                                 </StackPanel>
                             </Border>
                             <Button x:Name="btnStartTrainingBig" Content="🚀  START TRAINING NOW"
                                     Style="{StaticResource BtnGreen}" Click="StartTraining_Click"
                                     IsEnabled="False" HorizontalAlignment="Stretch" Margin="0,0,0,12"/>
-                            <Border Background="#FAFAFA" BorderBrush="#E5E5E5" BorderThickness="1"
-                                    CornerRadius="4" Padding="10,8" Margin="0,0,0,12">
+                            <Border Background="#FAFAFA" BorderBrush="#E5E5E5" BorderThickness="1" CornerRadius="4" Padding="10,8" Margin="0,0,0,12">
                                 <StackPanel>
-                                    <TextBlock x:Name="txtTrainingStatus" Text="Ready"
-                                               Foreground="#888888" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,6"/>
+                                    <TextBlock x:Name="txtTrainingStatus" Text="Ready" Foreground="#888888" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,6"/>
                                     <ProgressBar x:Name="progressBarTraining" Value="0" Style="{StaticResource PbYellow}"/>
                                 </StackPanel>
                             </Border>
@@ -477,18 +443,24 @@
                                     Style="{StaticResource BtnYellow}" Click="RunInference_Click"
                                     HorizontalAlignment="Stretch" Height="42" FontSize="13" Margin="0,0,0,10"/>
                             <ProgressBar x:Name="progressBar" Value="0" Style="{StaticResource PbYellow}" Margin="0,0,0,6"/>
-                            <TextBlock x:Name="txtStatus" Text="Ready" Foreground="#AAAAAA" FontSize="11" Margin="0,0,0,12"/>
+                            <TextBlock x:Name="txtStatus" Text="Ready" Foreground="#AAAAAA" FontSize="11" Margin="0,0,0,8"/>
+
+                            <!-- IMAGE ADJUSTMENTS -->
+                            <Border Height="1" Background="#EEEEEE" Margin="0,0,0,10"/>
+                          
+                          
+                           
+                            <Button Content="↺  Reset" Style="{StaticResource BtnGray}"
+                                    Height="26" FontSize="10" HorizontalAlignment="Right" Margin="0,2,0,10"/>
+
                             <Border Height="1" Background="#EEEEEE" Margin="0,0,0,12"/>
                             <TextBlock Text="RESULT" Foreground="#F5C400" FontSize="10" FontWeight="Bold" Margin="0,0,0,8"/>
-                            <Border Background="#FAFAFA" BorderBrush="#E5E5E5" BorderThickness="1"
-                                    CornerRadius="4" Padding="12" Margin="0,0,0,8">
-                                <TextBox x:Name="txtResult" Text="—"
-                                         Foreground="#1A1A1A" Background="Transparent"
-                                         BorderThickness="0" IsReadOnly="True"
-                                         TextWrapping="Wrap" FontSize="24" FontWeight="Bold" FontFamily="Consolas"/>
+                            <Border Background="#FAFAFA" BorderBrush="#E5E5E5" BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,8">
+                                <TextBox x:Name="txtResult" Text="—" Foreground="#1A1A1A" Background="Transparent"
+                                         BorderThickness="0" IsReadOnly="True" TextWrapping="Wrap"
+                                         FontSize="24" FontWeight="Bold" FontFamily="Consolas"/>
                             </Border>
-                            <Border Background="#FAFAFA" BorderBrush="#E5E5E5" BorderThickness="1"
-                                    CornerRadius="4" Padding="10,8" Margin="0,0,0,8">
+                            <Border Background="#FAFAFA" BorderBrush="#E5E5E5" BorderThickness="1" CornerRadius="4" Padding="10,8" Margin="0,0,0,8">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
@@ -553,7 +525,6 @@
 
                 </Grid>
             </Border>
-
         </Grid>
 
         <!-- STATUS BAR -->
@@ -567,6 +538,5 @@
                 <TextBlock Grid.Column="1" Text="Pixtech DLS v2.0" Foreground="#CCCCCC" FontSize="10" VerticalAlignment="Center"/>
             </Grid>
         </Border>
-
     </Grid>
 </Window>
