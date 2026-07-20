@@ -7,16 +7,47 @@
 		<UseWPF>true</UseWPF>
 	</PropertyGroup>
 	<ItemGroup>
+	  <None Remove="Pixtech.png" />
+	</ItemGroup>
+	<ItemGroup>
 	  <Content Include="bin\Debug\net10.0-windows\Requirements.txt" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+		<PackageReference Include="OpenCvSharp4" Version="4.13.0.20260627" />
+		<PackageReference Include="OpenCvSharp4.Extensions" Version="4.13.0.20260627" />
+		<PackageReference Include="OpenCvSharp4.runtime.win" Version="4.13.0.20260627" />
+		<PackageReference Include="OpenCvSharp4.Windows" Version="4.13.0.20260627" />
 		<PackageReference Include="Python.Runtime" Version="2.7.9" />
 		<PackageReference Include="pythonnet" Version="3.0.5" />
 	</ItemGroup>
 
 	<ItemGroup>
+		<None Update="PythonScripts\db_manager.py">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+		<None Update="PythonScripts\final_ocr.py">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+		<None Update="PythonScripts\generate_pretrained.py">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+		<None Update="PythonScripts\main.py">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+		<None Update="PythonScripts\ocr_server.py">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+		<None Update="PythonScripts\Requirements.txt">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+		<None Update="PythonScripts\Train_last_layer.py">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+		<None Update="PythonScripts\Train_templates.py">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
 		<None Update="Train_text_ocr.py">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
@@ -30,5 +61,17 @@
 
 	<ItemGroup>
 	  <Folder Include="bin\Debug\net10.0-windows\Projects\" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Reference Include="Basler.Pylon">
+	    <HintPath>..\..\..\..\..\Program Files\Basler\pylon\Development\Assemblies\Basler.Pylon\x64\Basler.Pylon.dll</HintPath>
+	  </Reference>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Resource Include="Pixtech.png">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </Resource>
 	</ItemGroup>
 </Project>

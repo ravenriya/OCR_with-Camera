@@ -1,24 +1,18 @@
 ﻿# -*- coding: utf-8 -*-
 """
-train_last_layer.py  -  PixTech OCR Trainer v3
-================================================
-HOW IT WORKS:
-1. You annotate characters with their CORRECT label on the image
-2. Trainer runs EasyOCR on the FULL IMAGE to see what EasyOCR reads
-3. Matches annotations to the nearest EasyOCR character by position
-4. If they disagree -> that's a real confusion -> train a resolver
+train_last_layer.py  -  PixTech OCR Trainer v5.1 (Cognex-style)
+================================================================
+Always N classes (A-Z, 0-9, special chars). Never fewer.
 
-ANNOTATION TIPS:
-  - Annotate chars EasyOCR gets WRONG with the CORRECT label
-  - ALSO annotate some correctly-read chars of the same type
-    e.g. if 'D' is misread as '0', annotate the wrong 'D' AND a real '0'
-  - This gives the resolver examples of both sides
+1. Load pretrained_base.pth (knows all chars from synthetic)
+2. Your real annotation crops get mixed in for annotated chars
+3. Unannotated chars get synthetic data (prevents forgetting)
+4. Full network trains — learns your metal/reflections/textures
+5. Saves which chars have real data so inference knows what to trust
 """
-import argparse, json, os, random, sys, time, io
+import argparse, json, os, random, sys, io
 import cv2, numpy as np
-import torch
-import torch.nn as nn
-import torch.optim as optim
+import torch, torch.nn as nn, torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
@@ -27,348 +21,292 @@ os.environ['TQDM_DISABLE'] = '1'
 random.seed(42); np.random.seed(42); torch.manual_seed(42)
 
 IMG_SIZE = 48
+FULL_CHARS = list("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ/-.,()#:&")
+N_CLASSES = len(FULL_CHARS)
+CHAR_TO_IDX = {c: i for i, c in enumerate(FULL_CHARS)}
 
 
 class TinyCNN(nn.Module):
-    def __init__(self, n):
+    def __init__(self, n=N_CLASSES):
         super().__init__()
-        self.net = nn.Sequential(
+        self.backbone = nn.Sequential(
             nn.Conv2d(1, 32, 3, padding=1), nn.BatchNorm2d(32), nn.ReLU(), nn.MaxPool2d(2),
             nn.Conv2d(32, 64, 3, padding=1), nn.BatchNorm2d(64), nn.ReLU(), nn.MaxPool2d(2),
             nn.Conv2d(64, 128, 3, padding=1), nn.BatchNorm2d(128), nn.ReLU(), nn.AdaptiveAvgPool2d(4),
+        )
+        self.head = nn.Sequential(
             nn.Flatten(),
             nn.Linear(128 * 16, 256), nn.ReLU(), nn.Dropout(0.4),
-            nn.Linear(256, n)
+            nn.Linear(256, n),
         )
-    def forward(self, x):
-        return self.net(x)
+    def forward(self, x): return self.head(self.backbone(x))
+
+
+# ── Rendering + Augmentation ──────────────────────────────────────────
+
+HERSHEY_FONTS = [
+    cv2.FONT_HERSHEY_SIMPLEX, cv2.FONT_HERSHEY_PLAIN,
+    cv2.FONT_HERSHEY_DUPLEX, cv2.FONT_HERSHEY_COMPLEX,
+    cv2.FONT_HERSHEY_TRIPLEX, cv2.FONT_HERSHEY_COMPLEX_SMALL,
+]
+try:
+    from PIL import Image, ImageDraw, ImageFont
+    HAS_PIL = True
+except ImportError:
+    HAS_PIL = False
+
+PIL_FONTS = [
+    "arial.ttf", "arialbd.ttf", "times.ttf", "timesbd.ttf",
+    "cour.ttf", "courbd.ttf", "verdana.ttf", "verdanab.ttf",
+    "calibri.ttf", "calibrib.ttf", "consola.ttf", "consolab.ttf",
+    "impact.ttf", "tahoma.ttf", "tahomabd.ttf",
+]
+
+
+def _pil_render(char, size=IMG_SIZE):
+    bg = random.randint(20, 80)
+    img = Image.new('L', (size, size), color=bg)
+    draw = ImageDraw.Draw(img)
+    fs = random.randint(int(size * 0.5), int(size * 0.85))
+    font = None
+    for fn in random.sample(PIL_FONTS, len(PIL_FONTS)):
+        try: font = ImageFont.truetype(fn, fs); break
+        except: continue
+    if font is None: font = ImageFont.load_default()
+    fg = random.choice([random.randint(140, 240), random.randint(0, 50)])
+    try:
+        bb = draw.textbbox((0, 0), char, font=font); tw, th = bb[2]-bb[0], bb[3]-bb[1]
+    except: tw, th = draw.textsize(char, font=font)
+    draw.text(((size-tw)//2+random.randint(-3,3), (size-th)//2+random.randint(-3,3)),
+              char, fill=fg, font=font)
+    return np.array(img, dtype=np.uint8)
+
+
+def _cv2_render(char, size=IMG_SIZE):
+    img = np.full((size, size), random.randint(20, 80), dtype=np.uint8)
+    font = random.choice(HERSHEY_FONTS)
+    sc, th = random.uniform(0.8, 1.8), random.randint(1, 3)
+    fg = random.choice([random.randint(140, 240), random.randint(0, 50)])
+    (tw, tht), _ = cv2.getTextSize(char, font, sc, th)
+    cv2.putText(img, char, ((size-tw)//2+random.randint(-4,4), (size+tht)//2+random.randint(-4,4)),
+                font, sc, fg, th, cv2.LINE_AA)
+    return img
+
+
+def render_synthetic(char):
+    return _pil_render(char) if (HAS_PIL and random.random() < 0.7) else _cv2_render(char)
 
 
 def augment(img):
     h, w = img.shape
-    M = cv2.getRotationMatrix2D((w/2, h/2), random.uniform(-20, 20), 1.0)
+    M = cv2.getRotationMatrix2D((w/2, h/2), random.uniform(-15, 15), 1.0)
     img = cv2.warpAffine(img, M, (w, h), borderMode=cv2.BORDER_REPLICATE)
     if random.random() < 0.5:
-        mg = max(1, int(min(h, w) * 0.12))
+        mg = max(1, int(min(h, w) * 0.1))
         src = np.float32([[0,0],[w,0],[w,h],[0,h]])
-        dst = np.float32([
-            [random.randint(0,mg), random.randint(0,mg)],
-            [w-random.randint(0,mg), random.randint(0,mg)],
-            [w-random.randint(0,mg), h-random.randint(0,mg)],
-            [random.randint(0,mg), h-random.randint(0,mg)]
-        ])
-        img = cv2.warpPerspective(img, cv2.getPerspectiveTransform(src, dst),
-                                  (w, h), borderMode=cv2.BORDER_REPLICATE)
-    img = np.clip(img.astype(np.int32)*random.uniform(0.5,1.6)
-                  + random.randint(-40,40), 0, 255).astype(np.uint8)
-    if random.random() < 0.5:
-        img = cv2.GaussianBlur(img, (random.choice([3,5]),)*2, 0)
-    if random.random() < 0.5:
-        noise = np.random.normal(0, random.uniform(5,20), img.shape)
-        img = np.clip(img.astype(np.int32)+noise, 0, 255).astype(np.uint8)
-    if random.random() < 0.3:
-        k = np.ones((random.randint(1,2),)*2, np.uint8)
-        img = cv2.erode(img, k) if random.random() < 0.5 else cv2.dilate(img, k)
+        dst = np.float32([[random.randint(0,mg), random.randint(0,mg)],
+                          [w-random.randint(0,mg), random.randint(0,mg)],
+                          [w-random.randint(0,mg), h-random.randint(0,mg)],
+                          [random.randint(0,mg), h-random.randint(0,mg)]])
+        img = cv2.warpPerspective(img, cv2.getPerspectiveTransform(src, dst), (w,h), borderMode=cv2.BORDER_REPLICATE)
+    img = np.clip(img.astype(np.int32) * random.uniform(0.6, 1.5) + random.randint(-30, 30), 0, 255).astype(np.uint8)
+    if random.random() < 0.5: img = cv2.GaussianBlur(img, (random.choice([3,5]),)*2, 0)
+    if random.random() < 0.4:
+        img = np.clip(img.astype(np.float32) + np.random.normal(0, random.uniform(5,15), img.shape), 0, 255).astype(np.uint8)
     return img
 
 
 def to_tensor(crop):
-    img = cv2.resize(crop, (IMG_SIZE, IMG_SIZE)).astype(np.float32) / 127.5 - 1.0
-    return torch.tensor(img).unsqueeze(0)
-
+    return torch.tensor(cv2.resize(crop, (IMG_SIZE, IMG_SIZE)).astype(np.float32) / 127.5 - 1.0).unsqueeze(0)
 
 class DS(Dataset):
-    def __init__(self, s):
-        self.s = s
-    def __len__(self):
-        return len(self.s)
-    def __getitem__(self, i):
-        img, lbl = self.s[i]
-        return to_tensor(img), lbl
+    def __init__(self, s): self.s = s
+    def __len__(self): return len(self.s)
+    def __getitem__(self, i): return to_tensor(self.s[i][0]), self.s[i][1]
 
 
-def find_confusion_groups(annotations):
-    """
-    Run EasyOCR on full images, match annotations by position,
-    find what EasyOCR actually gets wrong.
-    """
-    import easyocr
-    print("[INFO] Running EasyOCR on full images to detect confusions...", flush=True)
-    reader = easyocr.Reader(['en'], gpu=torch.cuda.is_available(), verbose=False)
+# ── Collect real crops ────────────────────────────────────────────────
 
-    by_image = {}
+def collect_real_crops(annotations):
+    raw = {}
+    skipped = 0
     for a in annotations:
-        ip = a.get('ImagePath', '')
-        if ip:
-            by_image.setdefault(ip, []).append(a)
-
-    confusion_pairs = []
-
-    for img_path, img_anns in by_image.items():
+        lbl = a.get('Label', '').strip().upper()
+        if not lbl or len(lbl) != 1 or lbl not in CHAR_TO_IDX:
+            continue
+        img_path = a.get('ImagePath', '')
         bgr = cv2.imread(img_path)
         if bgr is None:
             print(f"[WARN] Cannot read: {img_path}", flush=True)
-            continue
-
-        results = reader.readtext(bgr, detail=1)
-        if not results:
-            print(f"[INFO] No OCR text in {os.path.basename(img_path)}", flush=True)
-            continue
-
-        # Build per-character positions from EasyOCR
-        ocr_chars = []
-        for (bbox, text, conf) in results:
-            if not text.strip():
-                continue
-            xs = [p[0] for p in bbox]
-            ys = [p[1] for p in bbox]
-            x_min, y_min = min(xs), min(ys)
-            w = max(xs) - x_min
-            h = max(ys) - y_min
-            char_w = w / max(len(text), 1)
-            for i, ch in enumerate(text):
-                ocr_chars.append({
-                    'char': ch.upper(),
-                    'cx': x_min + i * char_w + char_w / 2,
-                    'cy': y_min + h / 2,
-                })
-
-        print(f"[INFO] {os.path.basename(img_path)}: "
-              f"EasyOCR='{(''.join(oc['char'] for oc in ocr_chars))}'", flush=True)
-
-        for a in img_anns:
-            correct = a.get('Label', '').strip().upper()
-            if not correct or len(correct) != 1:
-                continue
-            ax = float(a['X']) + float(a['Width']) / 2
-            ay = float(a['Y']) + float(a['Height']) / 2
-
-            best_dist = float('inf')
-            best_ocr = None
-            for oc in ocr_chars:
-                d = ((ax - oc['cx'])**2 + (ay - oc['cy'])**2)**0.5
-                if d < best_dist:
-                    best_dist = d
-                    best_ocr = oc
-
-            max_dist = max(float(a['Width']), float(a['Height'])) * 2.0
-            if best_ocr and best_dist < max_dist:
-                ocr_char = best_ocr['char']
-                if ocr_char != correct:
-                    confusion_pairs.append((correct, ocr_char))
-                    print(f"[INFO]   '{correct}' annotated, EasyOCR='{ocr_char}' -> CONFUSED!",
-                          flush=True)
-                else:
-                    print(f"[INFO]   '{correct}' annotated, EasyOCR='{ocr_char}' -> correct",
-                          flush=True)
-            else:
-                print(f"[INFO]   '{correct}' annotated, no nearby EasyOCR match", flush=True)
-
-    # Merge into groups
-    groups = []
-    for correct, wrong in confusion_pairs:
-        pair = {correct, wrong}
-        merged = False
-        for i, g in enumerate(groups):
-            if g & pair:
-                groups[i] = g | pair
-                merged = True
-                break
-        if not merged:
-            groups.append(pair)
-    changed = True
-    while changed:
-        changed = False
-        new_groups = []
-        for g in groups:
-            merged = False
-            for i, ng in enumerate(new_groups):
-                if ng & g:
-                    new_groups[i] = ng | g
-                    merged = True
-                    changed = True
-                    break
-            if not merged:
-                new_groups.append(g)
-        groups = new_groups
-
-    char_to_group = {}
-    for group in groups:
-        for ch in group:
-            char_to_group[ch] = sorted(group)
-
-    print(f"\n[INFO] Confusion groups: {[sorted(g) for g in groups]}", flush=True)
-    return groups, char_to_group, confusion_pairs
-
-
-def collect_crops(annotations):
-    raw = {}
-    for a in annotations:
-        lbl = a.get('Label', '').strip().upper()
-        if not lbl or len(lbl) != 1:
-            continue
-        bgr = cv2.imread(a['ImagePath'])
-        if bgr is None:
-            continue
+            skipped += 1; continue
+        ih, iw = bgr.shape[:2]
         gray = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
-        x, y = int(float(a['X'])), int(float(a['Y']))
-        w, h = int(float(a['Width'])), int(float(a['Height']))
-        pad = max(4, min(w, h) // 6)
-        y1, y2 = max(0, y-pad), min(gray.shape[0], y+h+pad)
-        x1, x2 = max(0, x-pad), min(gray.shape[1], x+w+pad)
-        crop = gray[y1:y2, x1:x2]
-        if crop.size > 0 and min(crop.shape) >= 4:
-            raw.setdefault(lbl, []).append(crop)
+        ax, ay, aw, ah = float(a['X']), float(a['Y']), float(a['Width']), float(a['Height'])
+        x, y, w, h = int(ax*iw), int(ay*ih), int(aw*iw), int(ah*ih)
+        if w < 4 or h < 4:
+            skipped += 1; continue
+        pad = max(4, min(w, h) // 5)
+        crop = gray[max(0,y-pad):min(ih,y+h+pad), max(0,x-pad):min(iw,x+w+pad)]
+        if crop.size == 0 or min(crop.shape) < 4:
+            skipped += 1; continue
+        raw.setdefault(lbl, []).append(crop)
+    print(f"[INFO] Real crops: {sum(len(v) for v in raw.values())} across {len(raw)} chars. Skipped: {skipped}", flush=True)
+    for c in sorted(raw.keys()):
+        print(f"  '{c}': {len(raw[c])} real crops", flush=True)
     return raw
 
 
-def train_resolver(chars, raw, args, device):
-    available = [c for c in chars if c in raw]
-    if len(available) < 2:
-        return None, None
-    chars = sorted(available)
-    cidx = {c: i for i, c in enumerate(chars)}
-    n = len(chars)
-    print(f"\n[INFO] Training resolver for: {chars}", flush=True)
-
+def build_dataset(real_crops, synth_per_class=80):
     samples = []
-    for lbl in chars:
-        idx = cidx[lbl]
-        for c in raw[lbl]:
-            samples.append((c, idx))
-        for _ in range(args.augments):
-            samples.append((augment(random.choice(raw[lbl]).copy()), idx))
-        print(f"[INFO]   '{lbl}': {len(raw[lbl])} real + {args.augments} aug", flush=True)
+    annotated_chars = set(real_crops.keys())
+
+    for ci, char in enumerate(FULL_CHARS):
+        if char in annotated_chars:
+            crops = real_crops[char]
+            n_real = len(crops)
+            for crop in crops:
+                samples.append((crop, ci))
+            n_aug = max(synth_per_class, synth_per_class * 2)
+            for _ in range(n_aug):
+                samples.append((augment(random.choice(crops).copy()), ci))
+            n_synth = max(10, synth_per_class // 4)
+            for _ in range(n_synth):
+                samples.append((augment(render_synthetic(char)), ci))
+            print(f"  '{char}': {n_real} real + {n_aug} aug + {n_synth} synth", flush=True)
+        else:
+            for _ in range(synth_per_class):
+                samples.append((augment(render_synthetic(char)), ci))
 
     random.shuffle(samples)
-    split = max(1, int(len(samples) * 0.85))
-    val_s = samples[split:] if split < len(samples) else samples[-max(1, len(samples)//10):]
-    bs = min(args.batch, max(2, len(samples[:split])//2))
-
-    tr_dl = DataLoader(DS(samples[:split]), bs, shuffle=True, drop_last=True, num_workers=0)
-    va_dl = DataLoader(DS(val_s), bs, shuffle=False, drop_last=False, num_workers=0)
-
-    model = TinyCNN(n).to(device)
-    crit = nn.CrossEntropyLoss(label_smoothing=0.1)
-    opt = optim.AdamW(model.parameters(), lr=args.lr, weight_decay=1e-4)
-    sch = optim.lr_scheduler.CosineAnnealingLR(opt, T_max=args.epochs)
-
-    best = 0.0; best_sd = None
-    for ep in range(1, args.epochs+1):
-        model.train(); tc = tn = 0
-        for imgs, lbls in tr_dl:
-            imgs, lbls = imgs.to(device), lbls.to(device)
-            opt.zero_grad()
-            out = model(imgs)
-            crit(out, lbls).backward()
-            opt.step()
-            tc += (out.argmax(1)==lbls).sum().item(); tn += len(lbls)
-        model.eval(); vc = vn = 0
-        with torch.no_grad():
-            for imgs, lbls in va_dl:
-                imgs, lbls = imgs.to(device), lbls.to(device)
-                vc += (model(imgs).argmax(1)==lbls).sum().item(); vn += len(lbls)
-        sch.step()
-        ta, va = tc/max(tn,1)*100, vc/max(vn,1)*100
-        print(f"  Epoch {ep:3d}/{args.epochs} | Train:{ta:.1f}% | Val:{va:.1f}%", flush=True)
-        if va >= best:
-            best = va
-            best_sd = {k: v.clone() for k, v in model.state_dict().items()}
-
-    if best_sd:
-        model.load_state_dict(best_sd)
-    print(f"[INFO] Resolver {chars} best val: {best:.1f}%", flush=True)
-    return model, chars
+    print(f"[INFO] Total dataset: {len(samples)} ({len(annotated_chars)} chars have real data)", flush=True)
+    return samples
 
 
 def main():
     p = argparse.ArgumentParser()
     p.add_argument('annotations')
     p.add_argument('output_dir')
+    p.add_argument('--pretrained', default=None)
     p.add_argument('--epochs', type=int, default=80)
-    p.add_argument('--augments', type=int, default=120)
+    p.add_argument('--augments', type=int, default=80)
     p.add_argument('--batch', type=int, default=32)
-    p.add_argument('--lr', type=float, default=0.001)
+    p.add_argument('--lr', type=float, default=0.0005)
     args = p.parse_args()
 
-    anns = json.load(open(args.annotations, 'r'))
+    raw_text = open(args.annotations, 'r', encoding='utf-8-sig').read()
+    anns = json.loads(raw_text)
+    anns = [a for a in anns if a.get('Label', '').strip() not in ('', '?')]
+    print(f"[INFO] {len(anns)} valid annotations", flush=True)
     if not anns:
-        print("[ERROR] No annotations!", file=sys.stderr, flush=True); sys.exit(1)
-    print(f"[INFO] {len(anns)} annotations loaded", flush=True)
+        print("[ERROR] No annotations!", file=sys.stderr, flush=True)
+        sys.exit(1)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"[INFO] Device: {device}", flush=True)
 
-    confusion_groups, char_to_group, confusion_pairs = find_confusion_groups(anns)
-    raw = collect_crops(anns)
-    if not raw:
-        print("[ERROR] No crops!", file=sys.stderr, flush=True); sys.exit(1)
-    print(f"[INFO] Annotated chars: {sorted(raw.keys())}", flush=True)
+    real_crops = collect_real_crops(anns)
+    if not real_crops:
+        print("[ERROR] No crops collected!", file=sys.stderr, flush=True)
+        sys.exit(1)
+
+    print(f"\n[INFO] Building balanced {N_CLASSES}-class dataset...", flush=True)
+    samples = build_dataset(real_crops, synth_per_class=args.augments)
+
+    split = max(1, int(len(samples) * 0.85))
+    train_s = samples[:split]
+    val_s = samples[split:] if split < len(samples) else samples[-max(1, len(samples)//10):]
+
+    bs = min(args.batch, max(2, len(train_s) // 4))
+    tr_dl = DataLoader(DS(train_s), bs, shuffle=True, drop_last=len(train_s) > bs, num_workers=0)
+    va_dl = DataLoader(DS(val_s), min(bs, len(val_s)), shuffle=False, num_workers=0)
+
+    model = TinyCNN(N_CLASSES).to(device)
+
+    # Find pretrained base
+    pretrained_path = args.pretrained
+    if pretrained_path is None:
+        for candidate in [
+            os.path.join(os.path.dirname(args.annotations), '..', 'Models', 'pretrained_base.pth'),
+            os.path.join(os.path.dirname(args.annotations), '..', '..', 'Models', 'pretrained_base.pth'),
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'Models', 'pretrained_base.pth'),
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pretrained_base.pth'),
+            'Models/pretrained_base.pth', 'pretrained_base.pth',
+        ]:
+            if os.path.exists(candidate):
+                pretrained_path = candidate; break
+
+    if pretrained_path and os.path.exists(pretrained_path):
+        print(f"[INFO] Loading pretrained base: {pretrained_path}", flush=True)
+        ckpt = torch.load(pretrained_path, map_location=device, weights_only=False)
+        # Handle charset size mismatch (old 36 vs new 44)
+        saved_chars = ckpt.get('chars', FULL_CHARS)
+        saved_n = ckpt.get('n_classes', len(saved_chars))
+        if saved_n == N_CLASSES:
+            model.load_state_dict(ckpt['model_state'])
+            print(f"[INFO] Pretrained base loaded ({saved_n} classes)", flush=True)
+        else:
+            # Load backbone only, skip head (different output size)
+            saved_sd = ckpt['model_state']
+            backbone_sd = {k: v for k, v in saved_sd.items() if k.startswith('backbone.')}
+            model.load_state_dict(backbone_sd, strict=False)
+            print(f"[INFO] Pretrained backbone loaded (base had {saved_n} classes, now {N_CLASSES})", flush=True)
+    else:
+        print(f"[WARN] No pretrained_base.pth found — training from scratch", flush=True)
+        print(f"[WARN] Run generate_pretrained.py first for best results!", flush=True)
+
+    crit = nn.CrossEntropyLoss(label_smoothing=0.1)
+    opt = optim.AdamW(model.parameters(), lr=args.lr, weight_decay=1e-4)
+    sch = optim.lr_scheduler.CosineAnnealingLR(opt, T_max=args.epochs)
+
+    best_val, best_sd = 0.0, None
+    for ep in range(1, args.epochs + 1):
+        model.train(); tc = tn = 0
+        for imgs, lbls in tr_dl:
+            imgs, lbls = imgs.to(device), lbls.to(device)
+            opt.zero_grad(); loss = crit(model(imgs), lbls); loss.backward(); opt.step()
+            with torch.no_grad(): tc += (model(imgs).argmax(1)==lbls).sum().item(); tn += len(lbls)
+        model.eval(); vc = vn = 0
+        with torch.no_grad():
+            for imgs, lbls in va_dl:
+                imgs, lbls = imgs.to(device), lbls.to(device)
+                vc += (model(imgs).argmax(1)==lbls).sum().item(); vn += len(lbls)
+        sch.step()
+        ta = tc/max(tn,1)*100; va = vc/max(vn,1)*100
+        print(f"  Epoch {ep:3d}/{args.epochs} | Train:{ta:.1f}% | Val:{va:.1f}%", flush=True)
+        if va >= best_val:
+            best_val = va; best_sd = {k: v.clone() for k, v in model.state_dict().items()}
+
+    if best_sd: model.load_state_dict(best_sd)
 
     os.makedirs(args.output_dir, exist_ok=True)
-
-    saved_groups = []
-    replacement_map = {}
-
-    for group in confusion_groups:
-        group_chars = sorted(group)
-        available = [c for c in group_chars if c in raw]
-        if len(available) >= 2:
-            model, chars = train_resolver(group_chars, raw, args, device)
-            if model is not None:
-                gn = '_'.join(sorted(chars))
-                mp = os.path.join(args.output_dir, f'resolver_{gn}.pth')
-                torch.save({
-                    'model_state': model.state_dict(),
-                    'chars': chars,
-                    'n_classes': len(chars),
-                    'img_size': IMG_SIZE,
-                }, mp)
-                saved_groups.append({'model_file': f'resolver_{gn}.pth',
-                                     'chars': chars, 'n_classes': len(chars)})
-                print(f"[INFO] Saved resolver: {gn}", flush=True)
-        else:
-            print(f"[WARN] Group {group_chars}: only crops for {available}, "
-                  f"need both sides for resolver", flush=True)
-
-    # Build replacement map for chars without resolvers
-    from collections import Counter
-    w2c = {}
-    for correct, wrong in confusion_pairs:
-        w2c.setdefault(wrong, []).append(correct)
-    resolver_chars = {ch for sg in saved_groups for ch in sg['chars']}
-    for wrong_ch, corrs in w2c.items():
-        if wrong_ch not in resolver_chars:
-            best, cnt = Counter(corrs).most_common(1)[0]
-            replacement_map[wrong_ch] = best
-            print(f"[INFO] Replacement (no resolver): '{wrong_ch}'->'{best}' ({cnt}x)",
-                  flush=True)
+    model_path = os.path.join(args.output_dir, 'char_classifier.pth')
+    torch.save({
+        'model_state': model.state_dict(),
+        'chars': FULL_CHARS,
+        'n_classes': N_CLASSES,
+        'img_size': IMG_SIZE,
+        'annotated_chars': sorted(real_crops.keys()),
+        'annotation_count': sum(len(v) for v in real_crops.values()),
+    }, model_path)
 
     config = {
-        'groups': saved_groups,
-        'all_trained_chars': sorted(raw.keys()),
-        'confusion_groups': [sorted(g) for g in confusion_groups],
-        'char_to_group': char_to_group,
-        'replacement_map': replacement_map,
+        'mode': 'direct_classifier',
+        'model_file': 'char_classifier.pth',
+        'chars': FULL_CHARS,
+        'n_classes': N_CLASSES,
+        'all_trained_chars': FULL_CHARS,
+        'annotated_chars': sorted(real_crops.keys()),
+        'annotation_count': sum(len(v) for v in real_crops.values()),
         'img_size': IMG_SIZE,
     }
     json.dump(config, open(os.path.join(args.output_dir, 'model_config.json'), 'w'), indent=2)
-    json.dump(anns, open(os.path.join(args.output_dir, 'annotations_ref.json'), 'w'), indent=2)
 
     print(f"\n{'='*60}", flush=True)
-    print(f"[DONE] Training complete!", flush=True)
-    print(f"[DONE] Resolvers: {len(saved_groups)}", flush=True)
-    for sg in saved_groups:
-        print(f"[DONE]   {sg['chars']}", flush=True)
-    if replacement_map:
-        print(f"[DONE] Replacements:", flush=True)
-        for w, c in replacement_map.items():
-            print(f"[DONE]   '{w}'->'{c}'", flush=True)
-    if not confusion_groups:
-        print(f"[DONE]   No confusions found - annotate chars EasyOCR gets WRONG", flush=True)
+    print(f"[DONE] {N_CLASSES}-class model trained", flush=True)
+    print(f"[DONE] Real data for: {sorted(real_crops.keys())}", flush=True)
+    print(f"[DONE] Best val: {best_val:.1f}%", flush=True)
     print(f"{'='*60}", flush=True)
-    print(f"TRAINING_COMPLETE:100.0", flush=True)
-
+    print(f"TRAINING_COMPLETE:{best_val:.1f}", flush=True)
 
 if __name__ == '__main__':
     main()

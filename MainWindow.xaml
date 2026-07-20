@@ -1,36 +1,37 @@
 ﻿<Window x:Class="PixtechApplication.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="PixTech Deep Learning Studio"
+        Title="PixTech OCR Studio"
         Height="860" Width="1440"
         MinHeight="700" MinWidth="1100"
         WindowStartupLocation="CenterScreen"
-        Background="#F4F4F4"
+        Background="#F7F8FA"
         FontFamily="Segoe UI">
 
     <Window.Resources>
-        <Style x:Key="BtnYellow" TargetType="Button">
-            <Setter Property="Background" Value="#F5C400"/>
-            <Setter Property="Foreground" Value="#111111"/>
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="FontSize" Value="12"/>
-            <Setter Property="Height" Value="34"/>
-            <Setter Property="Padding" Value="14,0"/>
+
+        <Style x:Key="BtnPrimary" TargetType="Button">
+            <Setter Property="Background"      Value="#1A1D23"/>
+            <Setter Property="Foreground"      Value="#E8B000"/>
+            <Setter Property="FontWeight"      Value="SemiBold"/>
+            <Setter Property="FontSize"        Value="13"/>
+            <Setter Property="Height"          Value="38"/>
             <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Cursor"          Value="Hand"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="bd" Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                        <Border x:Name="bd" Background="{TemplateBinding Background}"
+                                CornerRadius="4" Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="bd" Property="Background" Value="#E6B800"/>
+                                <Setter TargetName="bd" Property="Background" Value="#2A2D35"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
-                                <Setter TargetName="bd" Property="Background" Value="#DDDDDD"/>
-                                <Setter Property="Foreground" Value="#999999"/>
+                                <Setter TargetName="bd" Property="Background" Value="#DDDFE5"/>
+                                <Setter Property="Foreground" Value="#9098AA"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -38,19 +39,20 @@
             </Setter>
         </Style>
 
-        <Style x:Key="BtnGray" TargetType="Button">
-            <Setter Property="Background" Value="#FFFFFF"/>
-            <Setter Property="Foreground" Value="#333333"/>
-            <Setter Property="FontSize" Value="12"/>
-            <Setter Property="Height" Value="34"/>
-            <Setter Property="Padding" Value="12,0"/>
+        <Style x:Key="BtnGhost" TargetType="Button">
+            <Setter Property="Background"      Value="#FFFFFF"/>
+            <Setter Property="Foreground"      Value="#5A6070"/>
+            <Setter Property="FontSize"        Value="12"/>
+            <Setter Property="Height"          Value="32"/>
+            <Setter Property="Padding"         Value="12,0"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="BorderBrush" Value="#DDDDDD"/>
-            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="BorderBrush"     Value="#DDE0E8"/>
+            <Setter Property="Cursor"          Value="Hand"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="bd" Background="{TemplateBinding Background}"
+                        <Border x:Name="bd"
+                                Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
                                 CornerRadius="4" Padding="{TemplateBinding Padding}">
@@ -58,12 +60,13 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="bd" Property="Background" Value="#FFFBEB"/>
-                                <Setter TargetName="bd" Property="BorderBrush" Value="#F5C400"/>
+                                <Setter TargetName="bd" Property="Background"  Value="#F7F8FA"/>
+                                <Setter TargetName="bd" Property="BorderBrush" Value="#C8CCD8"/>
+                                <Setter Property="Foreground" Value="#1A1D23"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
-                                <Setter TargetName="bd" Property="Background" Value="#F5F5F5"/>
-                                <Setter Property="Foreground" Value="#BBBBBB"/>
+                                <Setter TargetName="bd" Property="Background" Value="#F0F1F4"/>
+                                <Setter Property="Foreground" Value="#C8CCD8"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -72,13 +75,13 @@
         </Style>
 
         <Style x:Key="BtnGreen" TargetType="Button">
-            <Setter Property="Background" Value="#22C55E"/>
-            <Setter Property="Foreground" Value="#FFFFFF"/>
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="Height" Value="44"/>
+            <Setter Property="Background"      Value="#18A058"/>
+            <Setter Property="Foreground"      Value="#FFFFFF"/>
+            <Setter Property="FontWeight"      Value="SemiBold"/>
+            <Setter Property="FontSize"        Value="13"/>
+            <Setter Property="Height"          Value="40"/>
             <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Cursor"          Value="Hand"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -87,11 +90,11 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="bd" Property="Background" Value="#16A34A"/>
+                                <Setter TargetName="bd" Property="Background" Value="#14834A"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
-                                <Setter TargetName="bd" Property="Background" Value="#DDDDDD"/>
-                                <Setter Property="Foreground" Value="#999999"/>
+                                <Setter TargetName="bd" Property="Background" Value="#DDDFE5"/>
+                                <Setter Property="Foreground" Value="#9098AA"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -99,26 +102,26 @@
             </Setter>
         </Style>
 
-        <Style x:Key="BtnOrange" TargetType="Button">
-            <Setter Property="Background" Value="#FFF3E0"/>
-            <Setter Property="Foreground" Value="#E15100"/>
-            <Setter Property="FontSize" Value="12"/>
-            <Setter Property="Height" Value="32"/>
+        <Style x:Key="BtnWarn" TargetType="Button">
+            <Setter Property="Background"      Value="#FFFFFF"/>
+            <Setter Property="Foreground"      Value="#B05A00"/>
+            <Setter Property="FontSize"        Value="12"/>
+            <Setter Property="Height"          Value="32"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="BorderBrush" Value="#FFCC80"/>
-            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="BorderBrush"     Value="#F0C830"/>
+            <Setter Property="Cursor"          Value="Hand"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border x:Name="bd" Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="4" Padding="10,0">
+                                CornerRadius="4" Padding="12,0">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="bd" Property="Background" Value="#FFE0B2"/>
+                                <Setter TargetName="bd" Property="Background" Value="#FEF9EC"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -126,26 +129,26 @@
             </Setter>
         </Style>
 
-        <Style x:Key="BtnRed" TargetType="Button">
-            <Setter Property="Background" Value="#FFF0F0"/>
-            <Setter Property="Foreground" Value="#DC2626"/>
-            <Setter Property="FontSize" Value="12"/>
-            <Setter Property="Height" Value="32"/>
+        <Style x:Key="BtnDanger" TargetType="Button">
+            <Setter Property="Background"      Value="#FFFFFF"/>
+            <Setter Property="Foreground"      Value="#D63B3B"/>
+            <Setter Property="FontSize"        Value="12"/>
+            <Setter Property="Height"          Value="32"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="BorderBrush" Value="Gray"/>
-            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="BorderBrush"     Value="#F5C0C0"/>
+            <Setter Property="Cursor"          Value="Hand"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border x:Name="bd" Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="4" Padding="10,0">
+                                CornerRadius="4" Padding="12,0">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="bd" Property="Background" Value="#FEE2E2"/>
+                                <Setter TargetName="bd" Property="Background" Value="#FDF0F0"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -154,24 +157,25 @@
         </Style>
 
         <Style x:Key="RadioMode" TargetType="RadioButton">
-            <Setter Property="Foreground" Value="#666666"/>
-            <Setter Property="FontSize" Value="12"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Padding" Value="12,6"/>
+            <Setter Property="Foreground" Value="#5A6070"/>
+            <Setter Property="FontSize"   Value="12"/>
+            <Setter Property="Cursor"     Value="Hand"/>
+            <Setter Property="Padding"    Value="14,6"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="RadioButton">
-                        <Border x:Name="bd" Background="Transparent" CornerRadius="16" Padding="{TemplateBinding Padding}">
+                        <Border x:Name="bd" Background="Transparent" CornerRadius="3"
+                                Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="bd" Property="Background" Value="#F5C400"/>
-                                <Setter Property="Foreground" Value="#111111"/>
-                                <Setter Property="FontWeight" Value="Bold"/>
+                                <Setter TargetName="bd" Property="Background" Value="#FFFFFF"/>
+                                <Setter Property="Foreground" Value="#1A1D23"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
                             </Trigger>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="bd" Property="Background" Value="#FFF8DC"/>
+                                <Setter TargetName="bd" Property="Background" Value="#FFFFFF"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -179,13 +183,13 @@
             </Setter>
         </Style>
 
-        <Style x:Key="TxtLight" TargetType="TextBox">
-            <Setter Property="Background" Value="#FFFFFF"/>
-            <Setter Property="Foreground" Value="#333333"/>
-            <Setter Property="BorderBrush" Value="#DDDDDD"/>
+        <Style x:Key="TxtClean" TargetType="TextBox">
+            <Setter Property="Background"      Value="#FFFFFF"/>
+            <Setter Property="Foreground"      Value="#1A1D23"/>
+            <Setter Property="BorderBrush"     Value="#DDE0E8"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Padding" Value="6,4"/>
-            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Padding"         Value="8,5"/>
+            <Setter Property="FontSize"        Value="12"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="TextBox">
@@ -197,7 +201,7 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsFocused" Value="True">
-                                <Setter Property="BorderBrush" Value="#F5C400"/>
+                                <Setter Property="BorderBrush" Value="#E8B000"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -205,37 +209,38 @@
             </Setter>
         </Style>
 
-        <Style x:Key="LbLight" TargetType="ListBox">
-            <Setter Property="Background" Value="#FFFFFF"/>
-            <Setter Property="Foreground" Value="#333333"/>
+        <Style x:Key="LbClean" TargetType="ListBox">
+            <Setter Property="Background"      Value="#FFFFFF"/>
+            <Setter Property="Foreground"      Value="#5A6070"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
         </Style>
 
         <Style x:Key="LbItem" TargetType="ListBoxItem">
-            <Setter Property="Foreground" Value="#444444"/>
-            <Setter Property="FontSize" Value="12"/>
-            <Setter Property="Padding" Value="10,7"/>
-            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground"               Value="#5A6070"/>
+            <Setter Property="FontSize"                 Value="12"/>
+            <Setter Property="Padding"                  Value="12,8"/>
+            <Setter Property="Background"               Value="Transparent"/>
             <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Cursor"                   Value="Hand"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ListBoxItem">
                         <Border x:Name="bd" Background="{TemplateBinding Background}"
-                                BorderBrush="#EEEEEE" BorderThickness="0,0,0,1"
+                                BorderBrush="#DDE0E8" BorderThickness="0,0,0,1"
                                 Padding="{TemplateBinding Padding}">
                             <ContentPresenter/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="bd" Property="Background" Value="#FFFBEB"/>
+                                <Setter TargetName="bd" Property="Background" Value="#F7F8FA"/>
+                                <Setter Property="Foreground" Value="#1A1D23"/>
                             </Trigger>
                             <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="bd" Property="Background" Value="#FFF8DC"/>
-                                <Setter TargetName="bd" Property="BorderBrush" Value="#F5C400"/>
-                                <Setter Property="Foreground" Value="#333333"/>
-                                <Setter Property="FontWeight" Value="SemiBold"/>
+                                <Setter TargetName="bd" Property="Background"  Value="#FEF9EC"/>
+                                <Setter TargetName="bd" Property="BorderBrush" Value="#F0C830"/>
+                                <Setter Property="Foreground"  Value="#7A5800"/>
+                                <Setter Property="FontWeight"  Value="SemiBold"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -243,51 +248,57 @@
             </Setter>
         </Style>
 
-        <Style x:Key="PbYellow" TargetType="ProgressBar">
-            <Setter Property="Height" Value="6"/>
-            <Setter Property="Background" Value="#EEEEEE"/>
-            <Setter Property="Foreground" Value="#F5C400"/>
+        <Style x:Key="PbAmber" TargetType="ProgressBar">
+            <Setter Property="Height"          Value="3"/>
+            <Setter Property="Background"      Value="#ECEEF2"/>
+            <Setter Property="Foreground"      Value="#E8B000"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ProgressBar">
                         <Grid>
-                            <Border Background="{TemplateBinding Background}" CornerRadius="3"/>
+                            <Border Background="{TemplateBinding Background}" CornerRadius="2"/>
                             <Border x:Name="PART_Track"/>
                             <Border x:Name="PART_Indicator" Background="{TemplateBinding Foreground}"
-                                    HorizontalAlignment="Left" CornerRadius="3"/>
+                                    HorizontalAlignment="Left" CornerRadius="2"/>
                         </Grid>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
         </Style>
+
     </Window.Resources>
 
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="60"/>
             <RowDefinition Height="52"/>
+            <RowDefinition Height="42"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="28"/>
+            <RowDefinition Height="26"/>
         </Grid.RowDefinitions>
 
         <!-- TOP BAR -->
-        <Border Grid.Row="0" Background="#FFFFFF" BorderBrush="#E5E5E5" BorderThickness="0,0,0,1">
+        <Border Grid.Row="0" Background="#FFFFFF" BorderBrush="#DDE0E8" BorderThickness="0,0,0,1">
             <Grid Margin="20,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
+
                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Image Source="Pixtech.png" Height="34" Width="34" Margin="0,0,10,0" RenderOptions.BitmapScalingMode="HighQuality"/>
+                    <Border Width="30" Height="30" CornerRadius="4" Background="#1A1D23" Margin="0,0,10,0">
+                        <TextBlock Text="P" Foreground="#E8B000" FontSize="16" FontWeight="Bold"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
                     <StackPanel VerticalAlignment="Center">
-                        <TextBlock Text="Pixtech" Foreground="#1A1A1A" FontSize="20" FontWeight="Bold"/>
-                        <TextBlock Text="Deep Learning Studio" Foreground="#AAAAAA" FontSize="9"/>
+                        <TextBlock Text="PixTech" Foreground="#1A1D23" FontSize="15" FontWeight="SemiBold"/>
+                        <TextBlock Text="OCR Studio" Foreground="#9098AA" FontSize="10"/>
                     </StackPanel>
                 </StackPanel>
-                <Border Grid.Column="1" Background="#F4F4F4" BorderBrush="#E0E0E0" BorderThickness="1"
-                        CornerRadius="20" Height="36" Width="300" HorizontalAlignment="Center">
+
+                <Border Grid.Column="1" Background="#F0F1F4" BorderBrush="#DDE0E8" BorderThickness="1"
+                        CornerRadius="4" Height="34" Width="290" HorizontalAlignment="Center" Padding="2">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -303,183 +314,208 @@
                                      HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
                     </Grid>
                 </Border>
-                <Border Grid.Column="2" Background="#FFF8DC" BorderBrush="#F5C400" BorderThickness="1"
-                        CornerRadius="4" Padding="14,6" VerticalAlignment="Center">
-                    <TextBlock x:Name="txtMode" Text="INFERENCE MODE" Foreground="#B8860B" FontSize="11" FontWeight="Bold"/>
+
+                <Border Grid.Column="2" Background="#FEF9EC" BorderBrush="#F0C830" BorderThickness="1"
+                        CornerRadius="4" Padding="12,5" VerticalAlignment="Center">
+                    <TextBlock x:Name="txtMode" Text="INFERENCE MODE"
+                               Foreground="#7A5800" FontSize="10" FontWeight="Bold"/>
                 </Border>
             </Grid>
         </Border>
 
         <!-- TOOLBAR -->
-        <Border Grid.Row="1" Background="#FAFAFA" BorderBrush="#E5E5E5" BorderThickness="0,0,0,1">
+        <Border Grid.Row="1" Background="#F7F8FA" BorderBrush="#DDE0E8" BorderThickness="0,0,0,1">
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="20,0">
-                <Button x:Name="btnLoadFiles"  Content="📂  Load Files"  Style="{StaticResource BtnGray}" Click="LoadFiles_Click"  Margin="0,0,8,0"/>
-                <Button x:Name="btnLoadFolder" Content="📁  Load Folder" Style="{StaticResource BtnGray}" Click="LoadFolder_Click" Margin="0,0,16,0"/>
-                <Button x:Name="btnAnnotate"         Content="✏  Annotate"       Style="{StaticResource BtnGray}"   Click="Annotate_Click"         Visibility="Collapsed" IsEnabled="False" Margin="16,0,8,0"/>
-                <Button x:Name="btnCheckAnnotations" Content="↻  Refresh"         Style="{StaticResource BtnGray}"   Click="CheckAnnotations_Click" Visibility="Collapsed" Margin="0,0,8,0"/>
-                <Button x:Name="btnStartTraining"    Content="🚀  Start Training" Style="{StaticResource BtnYellow}" Click="StartTraining_Click"    Visibility="Collapsed" IsEnabled="False"/>
+                <Button x:Name="btnLoadFiles"  Content="Load Files"   Style="{StaticResource BtnGhost}" Click="LoadFiles_Click"  Margin="0,0,6,0" Padding="12,0"/>
+                <Button x:Name="btnLoadFolder" Content="Load Folder"  Style="{StaticResource BtnGhost}" Click="LoadFolder_Click" Margin="0,0,14,0" Padding="12,0"/>
+                <Border Width="1" Height="18" Background="#DDE0E8" Margin="0,0,14,0"/>
+                <Button x:Name="btnAnnotate"         Content="Annotate"       Style="{StaticResource BtnGhost}"   Click="Annotate_Click"         Visibility="Collapsed" IsEnabled="False" Margin="0,0,6,0"/>
+                <Button x:Name="btnCheckAnnotations" Content="Refresh"         Style="{StaticResource BtnGhost}"   Click="CheckAnnotations_Click" Visibility="Collapsed" Margin="0,0,6,0"/>
+                <Button x:Name="btnStartTraining"    Content="Start Training"  Style="{StaticResource BtnPrimary}" Click="StartTraining_Click"    Visibility="Collapsed" IsEnabled="False" Padding="16,0"/>
             </StackPanel>
         </Border>
 
-        <!-- MAIN CONTENT -->
+        <!-- MAIN -->
         <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="200"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="300"/>
+                <ColumnDefinition Width="200" MinWidth="160"/>
+                <ColumnDefinition Width="*"   MinWidth="300"/>
+                <ColumnDefinition Width="300" MinWidth="260" MaxWidth="400"/>
             </Grid.ColumnDefinitions>
 
             <!-- LEFT -->
-            <Border Grid.Column="0" Background="#FFFFFF" BorderBrush="#E5E5E5" BorderThickness="0,0,1,0">
+            <Border Grid.Column="0" Background="#FFFFFF" BorderBrush="#DDE0E8" BorderThickness="0,0,1,0">
                 <Grid>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="40"/>
+                        <RowDefinition Height="38"/>
                         <RowDefinition Height="*"/>
-                        <RowDefinition Height="30"/>
+                        <RowDefinition Height="28"/>
                     </Grid.RowDefinitions>
-                    <Border Grid.Row="0" Background="#FAFAFA" BorderBrush="#E5E5E5" BorderThickness="0,0,0,1">
-                        <TextBlock Text="IMAGES" Foreground="#F5C400" FontSize="10" FontWeight="Bold" VerticalAlignment="Center" Margin="14,0"/>
+                    <Border Grid.Row="0" Background="#F7F8FA" BorderBrush="#DDE0E8" BorderThickness="0,0,0,1">
+                        <TextBlock Text="IMAGES" Foreground="#9098AA" FontSize="9" FontWeight="Bold"
+                                   VerticalAlignment="Center" Margin="14,0"/>
                     </Border>
-                    <ListBox Grid.Row="1" x:Name="lstImages" Style="{StaticResource LbLight}" ItemContainerStyle="{StaticResource LbItem}" SelectionChanged="ImageList_SelectionChanged"/>
-                    <Border Grid.Row="2" Background="#FAFAFA" BorderBrush="#E5E5E5" BorderThickness="0,1,0,0" Padding="14,0">
-                        <TextBlock x:Name="txtImageCount" Text="Images: 0" Foreground="#AAAAAA" FontSize="11" VerticalAlignment="Center"/>
+                    <ListBox Grid.Row="1" x:Name="lstImages"
+                             Style="{StaticResource LbClean}"
+                             ItemContainerStyle="{StaticResource LbItem}"
+                             SelectionChanged="ImageList_SelectionChanged"/>
+                    <Border Grid.Row="2" Background="#F7F8FA" BorderBrush="#DDE0E8" BorderThickness="0,1,0,0" Padding="14,0">
+                        <TextBlock x:Name="txtImageCount" Text="0 images" Foreground="#9098AA" FontSize="10" VerticalAlignment="Center"/>
                     </Border>
                 </Grid>
             </Border>
 
             <!-- CENTER -->
-            <Border Grid.Column="1" Background="#E8E8E8">
+            <Border Grid.Column="1" Background="#ECEEF2">
                 <Grid>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="40"/>
+                        <RowDefinition Height="38"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
-                    <Border Grid.Row="0" Background="#FAFAFA" BorderBrush="#E5E5E5" BorderThickness="0,0,0,1">
-                        <TextBlock Text="IMAGE DISPLAY" Foreground="#F5C400" FontSize="10" FontWeight="Bold" VerticalAlignment="Center" Margin="14,0"/>
+                    <Border Grid.Row="0" Background="#F7F8FA" BorderBrush="#DDE0E8" BorderThickness="0,0,0,1">
+                        <TextBlock Text="IMAGE DISPLAY" Foreground="#9098AA" FontSize="9" FontWeight="Bold"
+                                   VerticalAlignment="Center" Margin="14,0"/>
+
                     </Border>
                     <Grid Grid.Row="1" x:Name="imageContainer">
                         <Image x:Name="imgDisplay" Stretch="Uniform" StretchDirection="Both"
                                RenderOptions.BitmapScalingMode="HighQuality"
-                               MaxWidth="{Binding ActualWidth, ElementName=imageContainer}"
-                               MaxHeight="{Binding ActualHeight, ElementName=imageContainer}"/>
+                               SizeChanged="ImgDisplay_SizeChanged"/>
                         <Canvas x:Name="annotationCanvas" Background="Transparent" Visibility="Collapsed"
+                                HorizontalAlignment="Center" VerticalAlignment="Center"
                                 MouseLeftButtonDown="AnnotationCanvas_MouseDown"
                                 MouseMove="AnnotationCanvas_MouseMove"
                                 MouseLeftButtonUp="AnnotationCanvas_MouseUp"/>
                         <StackPanel x:Name="txtPlaceholder" HorizontalAlignment="Center" VerticalAlignment="Center">
-                            <TextBlock Text="📂" FontSize="48" HorizontalAlignment="Center" Foreground="#CCCCCC"/>
-                            <TextBlock Text="Load images to begin" Foreground="#BBBBBB" FontSize="14" HorizontalAlignment="Center" Margin="0,10,0,4"/>
-                            <TextBlock Text="PNG  ·  JPG  ·  BMP" Foreground="#CCCCCC" FontSize="11" HorizontalAlignment="Center"/>
+                            <TextBlock Text="📂" FontSize="40" HorizontalAlignment="Center"
+                                       Foreground="#C8CCD8" Margin="0,0,0,14"/>
+                            <TextBlock Text="Load images to begin" Foreground="#9098AA" FontSize="14"
+                                       HorizontalAlignment="Center" Margin="0,0,0,6"/>
+                            <TextBlock Text="PNG  ·  JPG  ·  BMP" Foreground="#C8CCD8" FontSize="11"
+                                       HorizontalAlignment="Center"/>
                         </StackPanel>
                     </Grid>
                 </Grid>
             </Border>
 
+            <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Right"
+                          VerticalAlignment="Stretch" Background="#DDE0E8"
+                          ResizeDirection="Columns" ResizeBehavior="CurrentAndNext"/>
+
             <!-- RIGHT -->
-            <Border Grid.Column="2" Background="#FFFFFF" BorderBrush="#E5E5E5" BorderThickness="1,0,0,0">
+            <Border Grid.Column="2" Background="#FFFFFF" BorderBrush="#DDE0E8" BorderThickness="1,0,0,0">
                 <Grid>
 
                     <!-- TRAINING PANEL -->
-                    <ScrollViewer x:Name="pnlTraining" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                    <ScrollViewer x:Name="pnlTraining" Visibility="Collapsed"
+                                  VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                         <StackPanel Margin="16,16,16,20">
-                            <TextBlock Text="TRAINING SETUP" Foreground="#F5C400" FontSize="10" FontWeight="Bold" Margin="0,0,0,12"/>
-                            <Border Background="#FFFBEB" BorderBrush="#F5C400" BorderThickness="1" CornerRadius="4" Padding="10,8" Margin="0,0,0,12">
+                            <TextBlock Text="TRAINING SETUP" Foreground="#9098AA" FontSize="9"
+                                       FontWeight="Bold" Margin="0,0,0,14"/>
+                            <Border Background="#FEF9EC" BorderBrush="#F0C830" BorderThickness="1"
+                                    CornerRadius="4" Padding="12,10" Margin="0,0,0,12">
                                 <StackPanel>
-                                    <TextBlock Text="ANNOTATION STATUS" Foreground="#B8860B" FontSize="9" FontWeight="Bold" Margin="0,0,0,4"/>
-                                    <TextBlock x:Name="txtAnnotationStatus" Text=" No annotations yet" Foreground="#DC2626" FontSize="12" TextWrapping="Wrap"/>
+                                    <TextBlock Text="ANNOTATION STATUS" Foreground="#9098AA" FontSize="9"
+                                               FontWeight="Bold" Margin="0,0,0,5"/>
+                                    <TextBlock x:Name="txtAnnotationStatus" Text="No annotations yet"
+                                               Foreground="#D63B3B" FontSize="12" TextWrapping="Wrap"/>
                                 </StackPanel>
                             </Border>
-                            <Button x:Name="btnStartTrainingBig" Content="🚀  START TRAINING NOW"
+                            <Button x:Name="btnStartTrainingBig" Content="Start Training"
                                     Style="{StaticResource BtnGreen}" Click="StartTraining_Click"
                                     IsEnabled="False" HorizontalAlignment="Stretch" Margin="0,0,0,12"/>
-                            <Border Background="#FAFAFA" BorderBrush="#E5E5E5" BorderThickness="1" CornerRadius="4" Padding="10,8" Margin="0,0,0,12">
+                            <Border Background="#F7F8FA" BorderBrush="#DDE0E8" BorderThickness="1"
+                                    CornerRadius="4" Padding="12,10" Margin="0,0,0,16">
                                 <StackPanel>
-                                    <TextBlock x:Name="txtTrainingStatus" Text="Ready" Foreground="#888888" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,6"/>
-                                    <ProgressBar x:Name="progressBarTraining" Value="0" Style="{StaticResource PbYellow}"/>
+                                    <TextBlock x:Name="txtTrainingStatus" Text="Ready"
+                                               Foreground="#9098AA" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,7"/>
+                                    <ProgressBar x:Name="progressBarTraining" Value="0" Style="{StaticResource PbAmber}"/>
                                 </StackPanel>
                             </Border>
-                            <Border Height="1" Background="#EEEEEE" Margin="0,4,0,12"/>
-                            <TextBlock Text="ANNOTATION TOOLS" Foreground="#F5C400" FontSize="10" FontWeight="Bold" Margin="0,0,0,8"/>
-                            <Button Content="⚡  Fix Mixed Annotations"  Style="{StaticResource BtnOrange}" Click="SeparateAnnotations_Click"          HorizontalAlignment="Stretch" Margin="0,0,0,6"/>
-                            <Button Content="🗑  Clear Current Image"    Style="{StaticResource BtnOrange}" Click="ClearCurrentImageAnnotations_Click" HorizontalAlignment="Stretch" Margin="0,0,0,6"/>
-                            <Button Content="🗑  Clear ALL Annotations"  Style="{StaticResource BtnRed}"    Click="ClearAllAnnotations_Click"          HorizontalAlignment="Stretch"/>
-                            <Border Height="1" Background="#EEEEEE" Margin="0,12"/>
-                            <TextBlock Text="TRAINING PARAMETERS" Foreground="#F5C400" FontSize="10" FontWeight="Bold" Margin="0,0,0,8"/>
+                            <Border Height="1" Background="#DDE0E8" Margin="0,0,0,14"/>
+                            <TextBlock Text="ANNOTATION TOOLS" Foreground="#9098AA" FontSize="9" FontWeight="Bold" Margin="0,0,0,10"/>
+                            <Button Content="Fix Mixed Annotations"  Style="{StaticResource BtnWarn}"   Click="SeparateAnnotations_Click"          HorizontalAlignment="Stretch" Margin="0,0,0,6"/>
+                            <Button Content="Clear Current Image"    Style="{StaticResource BtnWarn}"   Click="ClearCurrentImageAnnotations_Click" HorizontalAlignment="Stretch" Margin="0,0,0,6"/>
+                            <Button Content="Clear ALL Annotations"  Style="{StaticResource BtnDanger}" Click="ClearAllAnnotations_Click"          HorizontalAlignment="Stretch"/>
+                            <Border Height="1" Background="#DDE0E8" Margin="0,14"/>
+                            <TextBlock Text="TRAINING PARAMETERS" Foreground="#9098AA" FontSize="9" FontWeight="Bold" Margin="0,0,0,12"/>
                             <Grid Margin="0,0,0,8">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="80"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="Epochs" Foreground="#666666" FontSize="12" VerticalAlignment="Center"/>
-                                <TextBox Grid.Column="1" x:Name="txtEpochs" Text="50" Style="{StaticResource TxtLight}" Height="28"/>
+                                <TextBlock Grid.Column="0" Text="Epochs" Foreground="#5A6070" FontSize="12" VerticalAlignment="Center"/>
+                                <TextBox   Grid.Column="1" x:Name="txtEpochs" Text="50" Style="{StaticResource TxtClean}" Height="30"/>
                             </Grid>
-                            <Grid Margin="0,0,0,8">
+                            <Grid Margin="0,0,0,16">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="80"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="Batch Size" Foreground="#666666" FontSize="12" VerticalAlignment="Center"/>
-                                <TextBox Grid.Column="1" x:Name="txtBatchSize" Text="32" Style="{StaticResource TxtLight}" Height="28"/>
+                                <TextBlock Grid.Column="0" Text="Batch Size" Foreground="#5A6070" FontSize="12" VerticalAlignment="Center"/>
+                                <TextBox   Grid.Column="1" x:Name="txtBatchSize" Text="32" Style="{StaticResource TxtClean}" Height="30"/>
                             </Grid>
-                            <Border Height="1" Background="#EEEEEE" Margin="0,4,0,12"/>
-                            <TextBlock Text="MODEL" Foreground="#F5C400" FontSize="10" FontWeight="Bold" Margin="0,0,0,8"/>
+                            <Border Height="1" Background="#DDE0E8" Margin="0,0,0,14"/>
+                            <TextBlock Text="MODEL" Foreground="#9098AA" FontSize="9" FontWeight="Bold" Margin="0,0,0,10"/>
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="8"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <Button Grid.Column="0" Content="💾 Save" Style="{StaticResource BtnGray}" Click="SaveModel_Click" Height="30" FontSize="11"/>
-                                <Button Grid.Column="2" Content="📂 Load" Style="{StaticResource BtnGray}" Click="LoadModel_Click" Height="30" FontSize="11"/>
+                                <Button Grid.Column="0" Content="Save" Style="{StaticResource BtnGhost}" Click="SaveModel_Click" Height="30" FontSize="12"/>
+                                <Button Grid.Column="2" Content="Grab" Style="{StaticResource BtnGhost}" Click="LoadModel_Click" Height="30" FontSize="12"/>
                             </Grid>
                         </StackPanel>
                     </ScrollViewer>
 
                     <!-- INFERENCE PANEL -->
-                    <ScrollViewer x:Name="pnlInference" Visibility="Visible" VerticalScrollBarVisibility="Auto">
+                    <ScrollViewer x:Name="pnlInference" Visibility="Visible"
+                                  VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                         <StackPanel Margin="16,16,16,20">
-                            <TextBlock Text="OCR INFERENCE" Foreground="#F5C400" FontSize="10" FontWeight="Bold" Margin="0,0,0,12"/>
-                            <Button x:Name="btnRunInference" Content="▶  Run OCR on Image"
-                                    Style="{StaticResource BtnYellow}" Click="RunInference_Click"
-                                    HorizontalAlignment="Stretch" Height="42" FontSize="13" Margin="0,0,0,10"/>
-                            <ProgressBar x:Name="progressBar" Value="0" Style="{StaticResource PbYellow}" Margin="0,0,0,6"/>
-                            <TextBlock x:Name="txtStatus" Text="Ready" Foreground="#AAAAAA" FontSize="11" Margin="0,0,0,8"/>
-
-                            <!-- IMAGE ADJUSTMENTS -->
-                            <Border Height="1" Background="#EEEEEE" Margin="0,0,0,10"/>
-                          
-                          
-                           
-                            <Button Content="↺  Reset" Style="{StaticResource BtnGray}"
-                                    Height="26" FontSize="10" HorizontalAlignment="Right" Margin="0,2,0,10"/>
-
-                            <Border Height="1" Background="#EEEEEE" Margin="0,0,0,12"/>
-                            <TextBlock Text="RESULT" Foreground="#F5C400" FontSize="10" FontWeight="Bold" Margin="0,0,0,8"/>
-                            <Border Background="#FAFAFA" BorderBrush="#E5E5E5" BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,8">
-                                <TextBox x:Name="txtResult" Text="—" Foreground="#1A1A1A" Background="Transparent"
-                                         BorderThickness="0" IsReadOnly="True" TextWrapping="Wrap"
-                                         FontSize="24" FontWeight="Bold" FontFamily="Consolas"/>
+                            <TextBlock Text="OCR INFERENCE" Foreground="#9098AA" FontSize="9"
+                                       FontWeight="Bold" Margin="0,0,0,14"/>
+                            <Button x:Name="btnRunInference" Content="Run OCR on Image"
+                                    Style="{StaticResource BtnPrimary}" Click="RunInference_Click"
+                                    HorizontalAlignment="Stretch" Height="40" FontSize="13" Margin="0,0,0,10"/>
+                            <ProgressBar x:Name="progressBar" Value="0" Style="{StaticResource PbAmber}" Margin="0,0,0,5"/>
+                            <TextBlock x:Name="txtStatus" Text="Ready" Foreground="#9098AA" FontSize="11" Margin="0,0,0,14"/>
+                            <Border Height="1" Background="#DDE0E8" Margin="0,0,0,14"/>
+                            <TextBlock Text="RESULT" Foreground="#9098AA" FontSize="9" FontWeight="Bold" Margin="0,0,0,10"/>
+                            <Border Background="#F7F8FA" BorderBrush="#DDE0E8" BorderThickness="1"
+                                    CornerRadius="4" Padding="14" Margin="0,0,0,8" MinHeight="64">
+                                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" MaxHeight="180">
+                                    <TextBox x:Name="txtResult" Text="—" Foreground="#1A1D23"
+                                             Background="Transparent" BorderThickness="0"
+                                             IsReadOnly="False" TextWrapping="Wrap"
+                                             FontSize="28" FontWeight="SemiBold" FontFamily="Consolas"
+                                             HorizontalAlignment="Stretch"/>
+                                </ScrollViewer>
                             </Border>
-                            <Border Background="#FAFAFA" BorderBrush="#E5E5E5" BorderThickness="1" CornerRadius="4" Padding="10,8" Margin="0,0,0,8">
+                            <Border Background="#F7F8FA" BorderBrush="#DDE0E8" BorderThickness="1"
+                                    CornerRadius="4" Padding="12,9" Margin="0,0,0,14">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock x:Name="txtConfidence" Text="Confidence: —" Foreground="#888888" FontSize="12" VerticalAlignment="Center"/>
-                                    <TextBlock Grid.Column="1" x:Name="txtDecision" Text="—" Foreground="#AAAAAA" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="txtConfidence" Text="Confidence: —"
+                                               Foreground="#5A6070" FontSize="12" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="1" x:Name="txtDecision" Text="—"
+                                               Foreground="#9098AA" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
                                 </Grid>
                             </Border>
-                            <Border Height="1" Background="#EEEEEE" Margin="0,0,0,12"/>
-                            <TextBlock Text="DECISION" Foreground="#F5C400" FontSize="10" FontWeight="Bold" Margin="0,0,0,8"/>
-                            <Grid Margin="0,0,0,12">
+                            <Border Height="1" Background="#DDE0E8" Margin="0,0,0,14"/>
+                            <TextBlock Text="DECISION" Foreground="#9098AA" FontSize="9" FontWeight="Bold" Margin="0,0,0,10"/>
+                            <Grid Margin="0,0,0,14">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="8"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <Button Grid.Column="0" Content="✓  Accept" Click="Accept_Click" Height="36" FontSize="13"
-                                        FontWeight="Bold" Cursor="Hand" Background="#22C55E" Foreground="White" BorderThickness="0">
+                                <Button Grid.Column="0" Content="Accept" Click="Accept_Click"
+                                        Height="36" FontSize="12" FontWeight="SemiBold" Cursor="Hand"
+                                        Background="#18A058" Foreground="White" BorderThickness="0">
                                     <Button.Template>
                                         <ControlTemplate TargetType="Button">
                                             <Border x:Name="bd" Background="{TemplateBinding Background}" CornerRadius="4">
@@ -487,14 +523,15 @@
                                             </Border>
                                             <ControlTemplate.Triggers>
                                                 <Trigger Property="IsMouseOver" Value="True">
-                                                    <Setter TargetName="bd" Property="Background" Value="#16A34A"/>
+                                                    <Setter TargetName="bd" Property="Background" Value="#14834A"/>
                                                 </Trigger>
                                             </ControlTemplate.Triggers>
                                         </ControlTemplate>
                                     </Button.Template>
                                 </Button>
-                                <Button Grid.Column="2" Content="✕  Reject" Click="Reject_Click" Height="36" FontSize="13"
-                                        FontWeight="Bold" Cursor="Hand" Background="#EF4444" Foreground="White" BorderThickness="0">
+                                <Button Grid.Column="2" Content="Reject" Click="Reject_Click"
+                                        Height="36" FontSize="12" FontWeight="SemiBold" Cursor="Hand"
+                                        Background="#D63B3B" Foreground="White" BorderThickness="0">
                                     <Button.Template>
                                         <ControlTemplate TargetType="Button">
                                             <Border x:Name="bd" Background="{TemplateBinding Background}" CornerRadius="4">
@@ -502,23 +539,32 @@
                                             </Border>
                                             <ControlTemplate.Triggers>
                                                 <Trigger Property="IsMouseOver" Value="True">
-                                                    <Setter TargetName="bd" Property="Background" Value="#DC2626"/>
+                                                    <Setter TargetName="bd" Property="Background" Value="#B83030"/>
                                                 </Trigger>
                                             </ControlTemplate.Triggers>
                                         </ControlTemplate>
                                     </Button.Template>
                                 </Button>
                             </Grid>
-                            <Border Height="1" Background="#EEEEEE" Margin="0,0,0,12"/>
-                            <TextBlock Text="MODEL" Foreground="#F5C400" FontSize="10" FontWeight="Bold" Margin="0,0,0,8"/>
+                            <Border Height="1" Background="#DDE0E8" Margin="0,0,0,14"/>
+                            <TextBlock Text="MODEL" Foreground="#9098AA" FontSize="9" FontWeight="Bold" Margin="0,0,0,10"/>
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="8"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <Button Grid.Column="0" Content="💾 Save" Style="{StaticResource BtnGray}" Click="SaveModel_Click" Height="30" FontSize="11"/>
-                                <Button Grid.Column="2" Content="📂 Load" Style="{StaticResource BtnGray}" Click="LoadModel_Click" Height="30" FontSize="11"/>
+                                <Button Grid.Column="0" Content="Save" Style="{StaticResource BtnGhost}" Click="SaveModel_Click" Height="30" FontSize="12"/>
+                                <Button Grid.Column="2" Content="Start" Style="{StaticResource BtnGhost}" Click="LoadModel_Click" Height="30" FontSize="12"/>
+                            </Grid>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="130*"/>
+                                    <ColumnDefinition Width="8"/>
+                                    <ColumnDefinition Width="41*"/>
+                                    <ColumnDefinition Width="89*"/>
+                                </Grid.ColumnDefinitions>
+                                <Button Grid.Column="2" Content="Grab" Style="{StaticResource BtnGhost}" Click="start" Height="30" FontSize="12" Grid.ColumnSpan="2"/>
                             </Grid>
                         </StackPanel>
                     </ScrollViewer>
@@ -528,14 +574,18 @@
         </Grid>
 
         <!-- STATUS BAR -->
-        <Border Grid.Row="3" Background="#FFFFFF" BorderBrush="#E5E5E5" BorderThickness="0,1,0,0">
+        <Border Grid.Row="3" Background="#F7F8FA" BorderBrush="#DDE0E8" BorderThickness="0,1,0,0">
             <Grid Margin="16,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock x:Name="txtStatusBar" Text="Ready" Foreground="#AAAAAA" FontSize="11" VerticalAlignment="Center"/>
-                <TextBlock Grid.Column="1" Text="Pixtech DLS v2.0" Foreground="#CCCCCC" FontSize="10" VerticalAlignment="Center"/>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Ellipse Width="5" Height="2
+" Fill="#18A058" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                    <TextBlock x:Name="txtStatusBar" Text="Ready" Foreground="#9098AA" FontSize="11" VerticalAlignment="Center"/>
+                </StackPanel>
+                <TextBlock Grid.Column="1" Text="PixTech DLS v2.0" Foreground="#C8CCD8" FontSize="10" VerticalAlignment="Center"/>
             </Grid>
         </Border>
     </Grid>
