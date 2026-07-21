@@ -434,9 +434,7 @@
                             </Border>
                             <Border Height="1" Background="#DDE0E8" Margin="0,0,0,14"/>
                             <TextBlock Text="ANNOTATION TOOLS" Foreground="#9098AA" FontSize="9" FontWeight="Bold" Margin="0,0,0,10"/>
-                            <Button Content="Fix Mixed Annotations"  Style="{StaticResource BtnWarn}"   Click="SeparateAnnotations_Click"          HorizontalAlignment="Stretch" Margin="0,0,0,6"/>
-                            <Button Content="Clear Current Image"    Style="{StaticResource BtnWarn}"   Click="ClearCurrentImageAnnotations_Click" HorizontalAlignment="Stretch" Margin="0,0,0,6"/>
-                            <Button Content="Clear ALL Annotations"  Style="{StaticResource BtnDanger}" Click="ClearAllAnnotations_Click"          HorizontalAlignment="Stretch"/>
+                           
                             <Border Height="1" Background="#DDE0E8" Margin="0,14"/>
                             <TextBlock Text="TRAINING PARAMETERS" Foreground="#9098AA" FontSize="9" FontWeight="Bold" Margin="0,0,0,12"/>
                             <Grid Margin="0,0,0,8">
@@ -464,7 +462,7 @@
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 <Button Grid.Column="0" Content="Save" Style="{StaticResource BtnGhost}" Click="SaveModel_Click" Height="30" FontSize="12"/>
-                                <Button Grid.Column="2" Content="Grab" Style="{StaticResource BtnGhost}" Click="LoadModel_Click" Height="30" FontSize="12"/>
+                                <Button Grid.Column="2" Content="Grab" Style="{StaticResource BtnGhost}" Click="Grab_Click" Height="30" FontSize="12"/>
                             </Grid>
                         </StackPanel>
                     </ScrollViewer>
@@ -564,7 +562,7 @@
                                     <ColumnDefinition Width="41*"/>
                                     <ColumnDefinition Width="89*"/>
                                 </Grid.ColumnDefinitions>
-                                <Button Grid.Column="2" Content="Grab" Style="{StaticResource BtnGhost}" Click="start" Height="30" FontSize="12" Grid.ColumnSpan="2"/>
+                                <Button Grid.Column="2" Content="Grab" Style="{StaticResource BtnGhost}" Click="Grab_Click" Height="30" FontSize="12" Grid.ColumnSpan="2"/>
                             </Grid>
                         </StackPanel>
                     </ScrollViewer>
