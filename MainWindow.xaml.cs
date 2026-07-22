@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Diagnostics;
+using System.Drawing;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -354,8 +355,63 @@ namespace PixtechApplication
                 MessageBox.Show(Ex.Message.ToString());
             }
         }
+        private bool isLive = false;
+
+        private void ImageContainer_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (annotationCanvas.Visibility == Visibility.Visible)
+                return;
+
+            if (e.ClickCount != 2)
+                return; // single click does nothing now — only double-click toggles live
+
+            if (!isLive)
+            {
+                StartLiveView();
+            }
+            else
+            {
+                StopLiveView();
+                if (currentImageIndex >= 0 && currentImageIndex < imageFiles.Count)
+                    ShowImage(imageFiles[currentImageIndex]); // bring back whatever was selected
+            }
+        }
 
 
+        private void StartLiveView()
+        {
+            try
+            {
+                if (basler_camera == null)
+                    return;
+
+                if (!basler_camera.IsOpen)
+                    basler_camera.Open();
+
+                basler_camera.StreamGrabber.Start(GrabStrategy.OneByOne, GrabLoop.ProvidedByStreamGrabber);
+
+                isLive = true;
+                txtPlaceholder.Visibility = Visibility.Collapsed;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to start live view: {ex.Message}");
+            }
+        }
+
+        private void StopLiveView()
+        {
+            if (basler_camera != null && basler_camera.StreamGrabber.IsGrabbing)
+                basler_camera.StreamGrabber.Stop();
+
+            isLive = false;
+        }
+
+
+        private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            StopLiveView();
+        }
         private void OnImageGrabbed(object sender, ImageGrabbedEventArgs e)
         {
             IGrabResult res = e.GrabResult;
@@ -401,7 +457,12 @@ namespace PixtechApplication
                 Dispatcher.BeginInvoke(new Action(() =>
                 {
                     txtPlaceholder.Visibility = Visibility.Collapsed;
-                    lastGrabbedFrame = bitmapSource;  // ADD THIS LINE
+                    lastGrabbedFrame = bitmapSource;
+                    if (isLive)
+                    {
+                        imgDisplay.Source = bitmapSource;
+                        return;
+                    }
 
                     try
                     {
@@ -432,6 +493,7 @@ namespace PixtechApplication
                 currentCameraImage = img.Clone();
             }
         }
+        
         private void OnGrabStopped(Object sender, GrabStopEventArgs e)
         {
             try
@@ -585,12 +647,10 @@ namespace PixtechApplication
 
         private void RemoveAllRoiVisuals()
         {
-            if (roiOverlayPath != null) annotationCanvas.Children.Remove(roiOverlayPath);
+            annotationCanvas.Children.Clear();
             roiOverlayPath = null;
             foreach (var r in roiRegions)
             {
-                foreach (var el in new UIElement[] { r.RectVisual, r.LabelVisual, r.RotHandleVisual, r.RotStemVisual })
-                    if (el != null) annotationCanvas.Children.Remove(el);
                 r.RectVisual = null; r.LabelVisual = null; r.RotHandleVisual = null; r.RotStemVisual = null;
             }
         }
@@ -702,7 +762,6 @@ namespace PixtechApplication
             r.RectVisual.Height = r.Height;
             r.RectVisual.RenderTransformOrigin = new WpfPoint(0.5, 0.5);
             r.RectVisual.RenderTransform = new RotateTransform(r.Angle);
-
             Canvas.SetLeft(r.LabelVisual, r.Left + 4);
             Canvas.SetTop(r.LabelVisual, r.Top - 16);
             string angleStr = r.Angle != 0 ? $" ↻{(int)r.Angle}°" : "";
@@ -733,12 +792,12 @@ namespace PixtechApplication
             }
             isDrawingRoi = true;
             roiDrawOrigin = pt;
-            roiDrawPreview = new Rectangle
+            roiDrawPreview = new WpfRectangle
             {
-                Stroke = new SolidColorBrush(Color.FromRgb(255, 140, 0)),
+                Stroke = new SolidColorBrush(WpfColor.FromRgb(255, 140, 0)),
                 StrokeThickness = 2,
                 StrokeDashArray = new DoubleCollection { 5, 3 },
-                Fill = new SolidColorBrush(Color.FromArgb(18, 255, 140, 0)),
+                Fill = new SolidColorBrush(WpfColor.FromArgb(18, 255, 140, 0)),
                 IsHitTestVisible = false,
                 Width = 1,
                 Height = 1,
@@ -768,7 +827,7 @@ namespace PixtechApplication
                     Height = templateHeight,
                     Stroke = WpfBrushes.Lime,
                     StrokeThickness = 2,
-                    Fill = new SolidColorBrush(Color.FromArgb(40, 0, 255, 0)),
+                    Fill = new SolidColorBrush(WpfColor.FromArgb(40, 0, 255, 0)),
                     IsHitTestVisible = false,
                 };
                 Canvas.SetLeft(stampPreview, px); Canvas.SetTop(stampPreview, py);
@@ -1221,13 +1280,13 @@ namespace PixtechApplication
         private void DrawTemplate()
         {
             RemoveTemplateVisuals();
-            tplRect = new Rectangle
+            tplRect = new WpfRectangle
             {
                 Width = templateWidth,
                 Height = templateHeight,
-                Stroke = Brushes.Cyan,
+                Stroke = WpfBrushes.Cyan,
                 StrokeThickness = 2,
-                Fill = new SolidColorBrush(Color.FromArgb(30, 0, 255, 255)),
+                Fill = new SolidColorBrush(WpfColor.FromArgb(30, 0, 255, 255)),
                 Tag = "TPL",
             };
             PutOnCanvas(tplRect, tplLeft, tplTop, Z_TEMPLATE);
@@ -1238,7 +1297,7 @@ namespace PixtechApplication
             tplLabel = new TextBlock
             {
                 Text = $"SIZE: {(int)templateWidth}×{(int)templateHeight}",
-                Foreground = Brushes.Cyan,
+                Foreground = WpfBrushes.Cyan,
                 FontSize = 9,
                 FontWeight = FontWeights.Bold,
                 IsHitTestVisible = false,
@@ -1321,7 +1380,7 @@ namespace PixtechApplication
                 Height = h,
                 Stroke = WpfBrushes.Lime,
                 StrokeThickness = 2,
-                Fill = new SolidColorBrush(Color.FromArgb(30, 0, 255, 0)),
+                Fill = new SolidColorBrush(WpfColor.FromArgb(30, 0, 255, 0)),
             };
             Canvas.SetLeft(rect, 0); Canvas.SetTop(rect, 0); container.Children.Add(rect);
 
@@ -1331,7 +1390,7 @@ namespace PixtechApplication
                 Foreground = WpfBrushes.Lime,
                 FontWeight = FontWeights.Bold,
                 FontSize = 11,
-                Background = new SolidColorBrush(Color.FromArgb(200, 0, 0, 0)),
+                Background = new SolidColorBrush(WpfColor.FromArgb(200, 0, 0, 0)),
                 Padding = new Thickness(2, 1, 2, 1),
                 IsHitTestVisible = false,
             };
@@ -1576,6 +1635,7 @@ namespace PixtechApplication
         private void ImgDisplay_SizeChanged(object sender, SizeChangedEventArgs e)
         {
             if (imgDisplay.Source == null) return;
+            System.Diagnostics.Debug.WriteLine($"roiRegions.Count = {roiRegions.Count}");
             var src = imgDisplay.Source as BitmapSource; if (src == null) return;
             double cW = imgDisplay.ActualWidth; double cH = imgDisplay.ActualHeight;
             if (cW < 10 || cH < 10) return;
@@ -1585,7 +1645,19 @@ namespace PixtechApplication
 
             double oldW = annotationCanvas.Width; double oldH = annotationCanvas.Height;
             annotationCanvas.Width = rW; annotationCanvas.Height = rH;
-
+            if (oldW > 10 && oldH > 10 && roiRegions.Count > 0)
+            {
+                double rsx = rW / oldW; double rsy = rH / oldH;
+                foreach (var region in roiRegions)
+                {
+                    region.Left *= rsx;
+                    region.Top *= rsy;
+                    region.Width *= rsx;
+                    region.Height *= rsy;
+                    
+                }
+                RebuildRoiVisuals();
+            }
             if (isTrainingMode)
             {
                 annotationCanvas.Visibility = Visibility.Visible; DrawTemplate();
@@ -1703,7 +1775,7 @@ namespace PixtechApplication
             isTrainingMode = rbTrainingMode.IsChecked == true;
             if (isTrainingMode)
             {
-                txtMode.Text = "TRAINING MODE"; txtMode.Foreground = new SolidColorBrush(Color.FromRgb(22, 163, 74));
+                txtMode.Text = "TRAINING MODE"; txtMode.Foreground = new SolidColorBrush(WpfColor.FromRgb(22, 163, 74));
                 pnlInference.Visibility = Visibility.Collapsed; pnlTraining.Visibility = Visibility.Visible;
                 btnAnnotate.Visibility = Visibility.Visible; btnStartTraining.Visibility = Visibility.Visible; btnCheckAnnotations.Visibility = Visibility.Visible;
                 btnAnnotate.IsEnabled = imageFiles.Count > 0;
@@ -1721,7 +1793,7 @@ namespace PixtechApplication
             }
             else
             {
-                txtMode.Text = "INFERENCE MODE"; txtMode.Foreground = new SolidColorBrush(Color.FromRgb(184, 134, 11));
+                txtMode.Text = "INFERENCE MODE"; txtMode.Foreground = new SolidColorBrush(WpfColor.FromRgb(184, 134, 11));
                 pnlInference.Visibility = Visibility.Visible; pnlTraining.Visibility = Visibility.Collapsed;
                 RemoveTemplateVisuals();
                 foreach (var ann in currentImageAnnotations.ToList()) if (ann.VisualContainer != null) annotationCanvas.Children.Remove(ann.VisualContainer);
@@ -2106,7 +2178,7 @@ namespace PixtechApplication
         public string Label { get; set; }
         public WpfRect Bounds { get; set; }
         public double Angle { get; set; }
-        public Rectangle VisualRect { get; set; }
+        public WpfRectangle VisualRect { get; set; }
         public Canvas VisualContainer { get; set; }
         public TextBlock LabelText { get; set; }
         public Ellipse RotDot { get; set; }

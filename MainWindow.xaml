@@ -5,33 +5,91 @@
         Height="860" Width="1440"
         MinHeight="700" MinWidth="1100"
         WindowStartupLocation="CenterScreen"
-        Background="#F7F8FA"
+        Closing="MainWindow_Closing"
+        Background="#FAF9F6"
         FontFamily="Segoe UI">
 
     <Window.Resources>
 
+        <!-- ============ PALETTE ============ -->
+        <!--<SolidColorBrush x:Key="BrushBg"            Color="#FAF9F6"/>
+        <SolidColorBrush x:Key="BrushSurface"        Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="BrushSurfaceAlt"     Color="#6E6A5F"/>
+        <SolidColorBrush x:Key="BrushBorder"         Color="#6E6A5F"/>
+        <SolidColorBrush x:Key="BrushBorderStrong"   Color="#CFCBBF"/>
+
+        <SolidColorBrush x:Key="BrushTextPrimary"    Color="#1B1B1B"/>
+        <SolidColorBrush x:Key="BrushTextSecondary"  Color="#6E6A5F"/>
+        <SolidColorBrush x:Key="BrushTextMuted"      Color="#1B1B1B"/>
+
+        <SolidColorBrush x:Key="BrushDark"           Color="#1C1C1C"/>
+        <SolidColorBrush x:Key="BrushDarkHover"      Color="#2C2C2C"/>
+
+        <SolidColorBrush x:Key="BrushAccentGold"       Color="#D6A429"/>
+        <SolidColorBrush x:Key="BrushAccentGoldSoft"   Color="#FBF2DC"/>
+        <SolidColorBrush x:Key="BrushAccentGoldBorder" Color="#E8C766"/>
+        <SolidColorBrush x:Key="BrushAccentGoldText"   Color="#8A6414"/>
+
+        <SolidColorBrush x:Key="BrushSuccess"        Color="#1E9E5A"/>
+        <SolidColorBrush x:Key="BrushSuccessHover"   Color="#17824A"/>
+        <SolidColorBrush x:Key="BrushDanger"         Color="#D64545"/>
+        <SolidColorBrush x:Key="BrushDangerHover"    Color="#B83636"/>
+        <SolidColorBrush x:Key="BrushDangerSoft"     Color="#FBEAEA"/>
+        <SolidColorBrush x:Key="BrushDangerBorder"   Color="#F0BFBF"/>-->
+        <!-- ============ PALETTE ============ -->
+        <SolidColorBrush x:Key="BrushBg"            Color="#D6D6CE"/>
+        <SolidColorBrush x:Key="BrushSurface"        Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="BrushSurfaceAlt"     Color="#C7C7BC"/>
+        <SolidColorBrush x:Key="BrushBorder"         Color="#0D0B0D"/>
+        <SolidColorBrush x:Key="BrushBorderStrong"   Color="#9C9C90"/>
+
+        <SolidColorBrush x:Key="BrushTextPrimary"    Color="#0D0B0D"/>
+        <SolidColorBrush x:Key="BrushTextSecondary"  Color="#1B1B1B"/>
+        <SolidColorBrush x:Key="BrushTextMuted"      Color="#0D0B0D"/>
+
+        <SolidColorBrush x:Key="BrushDark"           Color="#0D0B0D"/>
+        <SolidColorBrush x:Key="BrushDarkHover"      Color="#232323"/>
+
+        <SolidColorBrush x:Key="BrushAccentGold"       Color="#D6C313"/>
+        <SolidColorBrush x:Key="BrushAccentGoldSoft"   Color="#FAF6C8"/>
+        <SolidColorBrush x:Key="BrushAccentGoldBorder" Color="#E8DA6B"/>
+        <SolidColorBrush x:Key="BrushAccentGoldText"   Color="#5C5200"/>
+
+        <SolidColorBrush x:Key="BrushSuccess"        Color="#1E9E5A"/>
+        <SolidColorBrush x:Key="BrushSuccessHover"   Color="#17824A"/>
+        <SolidColorBrush x:Key="BrushDanger"         Color="#D64545"/>
+        <SolidColorBrush x:Key="BrushDangerHover"    Color="#B83636"/>
+        <SolidColorBrush x:Key="BrushDangerSoft"     Color="#FBEAEA"/>
+        <SolidColorBrush x:Key="BrushDangerBorder"   Color="#F0BFBF"/>
+
+        <DropShadowEffect x:Key="CardShadow" Color="#000000" Opacity="0.06"
+                           BlurRadius="12" ShadowDepth="2" Direction="270"/>
+
+        <!-- ============ BUTTONS ============ -->
+
         <Style x:Key="BtnPrimary" TargetType="Button">
-            <Setter Property="Background"      Value="#1A1D23"/>
-            <Setter Property="Foreground"      Value="#E8B000"/>
-            <Setter Property="FontWeight"      Value="SemiBold"/>
-            <Setter Property="FontSize"        Value="13"/>
-            <Setter Property="Height"          Value="38"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Cursor"          Value="Hand"/>
+            <Setter Property="Background"        Value="{StaticResource BrushDark}"/>
+            <Setter Property="Foreground"        Value="{StaticResource BrushAccentGold}"/>
+            <Setter Property="FontWeight"        Value="SemiBold"/>
+            <Setter Property="FontSize"          Value="13"/>
+            <Setter Property="Height"            Value="38"/>
+            <Setter Property="BorderThickness"   Value="0"/>
+            <Setter Property="Cursor"            Value="Hand"/>
+            <Setter Property="FocusVisualStyle"  Value="{x:Null}"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border x:Name="bd" Background="{TemplateBinding Background}"
-                                CornerRadius="4" Padding="{TemplateBinding Padding}">
+                                CornerRadius="6" Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="bd" Property="Background" Value="#2A2D35"/>
+                                <Setter TargetName="bd" Property="Background" Value="{StaticResource BrushDarkHover}"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
-                                <Setter TargetName="bd" Property="Background" Value="#DDDFE5"/>
-                                <Setter Property="Foreground" Value="#9098AA"/>
+                                <Setter TargetName="bd" Property="Background" Value="{StaticResource BrushBorder}"/>
+                                <Setter Property="Foreground" Value="{StaticResource BrushTextMuted}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -40,33 +98,38 @@
         </Style>
 
         <Style x:Key="BtnGhost" TargetType="Button">
-            <Setter Property="Background"      Value="#FFFFFF"/>
-            <Setter Property="Foreground"      Value="#5A6070"/>
-            <Setter Property="FontSize"        Value="12"/>
-            <Setter Property="Height"          Value="32"/>
-            <Setter Property="Padding"         Value="12,0"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="BorderBrush"     Value="#DDE0E8"/>
-            <Setter Property="Cursor"          Value="Hand"/>
+            <Setter Property="Background"        Value="{StaticResource BrushSurface}"/>
+            <Setter Property="Foreground"        Value="{StaticResource BrushTextSecondary}"/>
+            <Setter Property="FontSize"          Value="12"/>
+            <Setter Property="FontWeight"        Value="Medium"/>
+            <Setter Property="Height"            Value="34"/>
+            <Setter Property="Padding"           Value="14,0"/>
+            <Setter Property="BorderThickness"   Value="1"/>
+            <Setter Property="BorderBrush"       Value="{StaticResource BrushBorder}"/>
+            <Setter Property="Cursor"            Value="Hand"/>
+            <Setter Property="FocusVisualStyle"  Value="{x:Null}"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border x:Name="bd"
-                                Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="4" Padding="{TemplateBinding Padding}">
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="7" Padding="{TemplateBinding Padding}">
+                            <Border.Effect>
+                                <DropShadowEffect Color="#000000" Opacity="0.05" BlurRadius="6" ShadowDepth="1" Direction="270"/>
+                            </Border.Effect>
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="bd" Property="Background"  Value="#F7F8FA"/>
-                                <Setter TargetName="bd" Property="BorderBrush" Value="#C8CCD8"/>
-                                <Setter Property="Foreground" Value="#1A1D23"/>
+                                <Setter TargetName="bd" Property="Background"  Value="{StaticResource BrushAccentGoldSoft}"/>
+                                <Setter TargetName="bd" Property="BorderBrush" Value="{StaticResource BrushAccentGoldBorder}"/>
+                                <Setter Property="Foreground" Value="{StaticResource BrushTextPrimary}"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
-                                <Setter TargetName="bd" Property="Background" Value="#F0F1F4"/>
-                                <Setter Property="Foreground" Value="#C8CCD8"/>
+                                <Setter TargetName="bd" Property="Background" Value="{StaticResource BrushSurfaceAlt}"/>
+                                <Setter Property="Foreground" Value="{StaticResource BrushTextMuted}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -75,26 +138,27 @@
         </Style>
 
         <Style x:Key="BtnGreen" TargetType="Button">
-            <Setter Property="Background"      Value="#18A058"/>
-            <Setter Property="Foreground"      Value="#FFFFFF"/>
-            <Setter Property="FontWeight"      Value="SemiBold"/>
-            <Setter Property="FontSize"        Value="13"/>
-            <Setter Property="Height"          Value="40"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Cursor"          Value="Hand"/>
+            <Setter Property="Background"        Value="{StaticResource BrushSuccess}"/>
+            <Setter Property="Foreground"        Value="#FFFFFF"/>
+            <Setter Property="FontWeight"        Value="SemiBold"/>
+            <Setter Property="FontSize"          Value="13"/>
+            <Setter Property="Height"            Value="40"/>
+            <Setter Property="BorderThickness"   Value="0"/>
+            <Setter Property="Cursor"            Value="Hand"/>
+            <Setter Property="FocusVisualStyle"  Value="{x:Null}"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="bd" Background="{TemplateBinding Background}" CornerRadius="4">
+                        <Border x:Name="bd" Background="{TemplateBinding Background}" CornerRadius="6">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="bd" Property="Background" Value="#14834A"/>
+                                <Setter TargetName="bd" Property="Background" Value="{StaticResource BrushSuccessHover}"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
-                                <Setter TargetName="bd" Property="Background" Value="#DDDFE5"/>
-                                <Setter Property="Foreground" Value="#9098AA"/>
+                                <Setter TargetName="bd" Property="Background" Value="{StaticResource BrushBorder}"/>
+                                <Setter Property="Foreground" Value="{StaticResource BrushTextMuted}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -103,25 +167,26 @@
         </Style>
 
         <Style x:Key="BtnWarn" TargetType="Button">
-            <Setter Property="Background"      Value="#FFFFFF"/>
-            <Setter Property="Foreground"      Value="#B05A00"/>
-            <Setter Property="FontSize"        Value="12"/>
-            <Setter Property="Height"          Value="32"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="BorderBrush"     Value="#F0C830"/>
-            <Setter Property="Cursor"          Value="Hand"/>
+            <Setter Property="Background"        Value="{StaticResource BrushSurface}"/>
+            <Setter Property="Foreground"        Value="{StaticResource BrushAccentGoldText}"/>
+            <Setter Property="FontSize"          Value="12"/>
+            <Setter Property="Height"            Value="32"/>
+            <Setter Property="BorderThickness"   Value="1"/>
+            <Setter Property="BorderBrush"       Value="{StaticResource BrushAccentGoldBorder}"/>
+            <Setter Property="Cursor"            Value="Hand"/>
+            <Setter Property="FocusVisualStyle"  Value="{x:Null}"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border x:Name="bd" Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="4" Padding="12,0">
+                                CornerRadius="6" Padding="12,0">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="bd" Property="Background" Value="#FEF9EC"/>
+                                <Setter TargetName="bd" Property="Background" Value="{StaticResource BrushAccentGoldSoft}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -130,25 +195,26 @@
         </Style>
 
         <Style x:Key="BtnDanger" TargetType="Button">
-            <Setter Property="Background"      Value="#FFFFFF"/>
-            <Setter Property="Foreground"      Value="#D63B3B"/>
-            <Setter Property="FontSize"        Value="12"/>
-            <Setter Property="Height"          Value="32"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="BorderBrush"     Value="#F5C0C0"/>
-            <Setter Property="Cursor"          Value="Hand"/>
+            <Setter Property="Background"        Value="{StaticResource BrushSurface}"/>
+            <Setter Property="Foreground"        Value="{StaticResource BrushDanger}"/>
+            <Setter Property="FontSize"          Value="12"/>
+            <Setter Property="Height"            Value="32"/>
+            <Setter Property="BorderThickness"   Value="1"/>
+            <Setter Property="BorderBrush"       Value="{StaticResource BrushDangerBorder}"/>
+            <Setter Property="Cursor"            Value="Hand"/>
+            <Setter Property="FocusVisualStyle"  Value="{x:Null}"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border x:Name="bd" Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="4" Padding="12,0">
+                                CornerRadius="6" Padding="12,0">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="bd" Property="Background" Value="#FDF0F0"/>
+                                <Setter TargetName="bd" Property="Background" Value="{StaticResource BrushDangerSoft}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -156,26 +222,78 @@
             </Setter>
         </Style>
 
+        <!-- Accept / Reject -->
+        <Style x:Key="BtnAccept" TargetType="Button">
+            <Setter Property="Background"        Value="{StaticResource BrushSuccess}"/>
+            <Setter Property="Foreground"        Value="White"/>
+            <Setter Property="FontWeight"        Value="SemiBold"/>
+            <Setter Property="FontSize"          Value="12"/>
+            <Setter Property="BorderThickness"   Value="0"/>
+            <Setter Property="Cursor"            Value="Hand"/>
+            <Setter Property="FocusVisualStyle"  Value="{x:Null}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" Background="{TemplateBinding Background}" CornerRadius="6">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="{StaticResource BrushSuccessHover}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="BtnReject" TargetType="Button">
+            <Setter Property="Background"        Value="{StaticResource BrushDanger}"/>
+            <Setter Property="Foreground"        Value="White"/>
+            <Setter Property="FontWeight"        Value="SemiBold"/>
+            <Setter Property="FontSize"          Value="12"/>
+            <Setter Property="BorderThickness"   Value="0"/>
+            <Setter Property="Cursor"            Value="Hand"/>
+            <Setter Property="FocusVisualStyle"  Value="{x:Null}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" Background="{TemplateBinding Background}" CornerRadius="6">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="{StaticResource BrushDangerHover}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ============ MODE TOGGLE ============ -->
+
         <Style x:Key="RadioMode" TargetType="RadioButton">
-            <Setter Property="Foreground" Value="#5A6070"/>
-            <Setter Property="FontSize"   Value="12"/>
-            <Setter Property="Cursor"     Value="Hand"/>
-            <Setter Property="Padding"    Value="14,6"/>
+            <Setter Property="Foreground"       Value="{StaticResource BrushTextSecondary}"/>
+            <Setter Property="FontSize"         Value="12"/>
+            <Setter Property="Cursor"           Value="Hand"/>
+            <Setter Property="Padding"          Value="14,6"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="RadioButton">
-                        <Border x:Name="bd" Background="Transparent" CornerRadius="3"
+                        <Border x:Name="bd" Background="Transparent" CornerRadius="5"
                                 Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="bd" Property="Background" Value="#FFFFFF"/>
-                                <Setter Property="Foreground" Value="#1A1D23"/>
+                                <Setter TargetName="bd" Property="Background" Value="{StaticResource BrushSurface}"/>
+                                <Setter Property="Foreground" Value="{StaticResource BrushTextPrimary}"/>
                                 <Setter Property="FontWeight" Value="SemiBold"/>
                             </Trigger>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="bd" Property="Background" Value="#FFFFFF"/>
+                                <Setter TargetName="bd" Property="Background" Value="{StaticResource BrushSurface}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -183,25 +301,30 @@
             </Setter>
         </Style>
 
+        <!-- ============ INPUTS ============ -->
+
         <Style x:Key="TxtClean" TargetType="TextBox">
-            <Setter Property="Background"      Value="#FFFFFF"/>
-            <Setter Property="Foreground"      Value="#1A1D23"/>
-            <Setter Property="BorderBrush"     Value="#DDE0E8"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Padding"         Value="8,5"/>
-            <Setter Property="FontSize"        Value="12"/>
+            <Setter Property="Background"        Value="{StaticResource BrushSurface}"/>
+            <Setter Property="Foreground"        Value="{StaticResource BrushTextPrimary}"/>
+            <Setter Property="BorderBrush"       Value="{StaticResource BrushBorder}"/>
+            <Setter Property="BorderThickness"   Value="1"/>
+            <Setter Property="Padding"           Value="8,5"/>
+            <Setter Property="FontSize"          Value="12"/>
+            <Setter Property="SelectionBrush"    Value="{StaticResource BrushAccentGold}"/>
+            <Setter Property="SelectionOpacity"  Value="0.35"/>
+            <Setter Property="CaretBrush"         Value="{StaticResource BrushTextPrimary}"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="TextBox">
                         <Border Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="4">
+                                CornerRadius="5">
                             <ScrollViewer x:Name="PART_ContentHost" Margin="0"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsFocused" Value="True">
-                                <Setter Property="BorderBrush" Value="#E8B000"/>
+                                <Setter Property="BorderBrush" Value="{StaticResource BrushAccentGold}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -209,37 +332,40 @@
             </Setter>
         </Style>
 
+        <!-- ============ LISTS ============ -->
+
         <Style x:Key="LbClean" TargetType="ListBox">
-            <Setter Property="Background"      Value="#FFFFFF"/>
-            <Setter Property="Foreground"      Value="#5A6070"/>
+            <Setter Property="Background"      Value="{StaticResource BrushSurface}"/>
+            <Setter Property="Foreground"      Value="{StaticResource BrushTextSecondary}"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
         </Style>
 
         <Style x:Key="LbItem" TargetType="ListBoxItem">
-            <Setter Property="Foreground"               Value="#5A6070"/>
-            <Setter Property="FontSize"                 Value="12"/>
-            <Setter Property="Padding"                  Value="12,8"/>
-            <Setter Property="Background"               Value="Transparent"/>
+            <Setter Property="Foreground"                 Value="{StaticResource BrushTextSecondary}"/>
+            <Setter Property="FontSize"                   Value="12"/>
+            <Setter Property="Padding"                    Value="12,9"/>
+            <Setter Property="Background"                 Value="Transparent"/>
             <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-            <Setter Property="Cursor"                   Value="Hand"/>
+            <Setter Property="Cursor"                     Value="Hand"/>
+            <Setter Property="FocusVisualStyle"           Value="{x:Null}"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ListBoxItem">
                         <Border x:Name="bd" Background="{TemplateBinding Background}"
-                                BorderBrush="#DDE0E8" BorderThickness="0,0,0,1"
+                                BorderBrush="{StaticResource BrushBorder}" BorderThickness="0,0,0,1"
                                 Padding="{TemplateBinding Padding}">
                             <ContentPresenter/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="bd" Property="Background" Value="#F7F8FA"/>
-                                <Setter Property="Foreground" Value="#1A1D23"/>
+                                <Setter TargetName="bd" Property="Background" Value="{StaticResource BrushSurfaceAlt}"/>
+                                <Setter Property="Foreground" Value="{StaticResource BrushTextPrimary}"/>
                             </Trigger>
                             <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="bd" Property="Background"  Value="#FEF9EC"/>
-                                <Setter TargetName="bd" Property="BorderBrush" Value="#F0C830"/>
-                                <Setter Property="Foreground"  Value="#7A5800"/>
+                                <Setter TargetName="bd" Property="Background"  Value="{StaticResource BrushAccentGoldSoft}"/>
+                                <Setter TargetName="bd" Property="BorderBrush" Value="{StaticResource BrushAccentGoldBorder}"/>
+                                <Setter Property="Foreground"  Value="{StaticResource BrushAccentGoldText}"/>
                                 <Setter Property="FontWeight"  Value="SemiBold"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
@@ -248,10 +374,12 @@
             </Setter>
         </Style>
 
+        <!-- ============ PROGRESS ============ -->
+
         <Style x:Key="PbAmber" TargetType="ProgressBar">
             <Setter Property="Height"          Value="3"/>
-            <Setter Property="Background"      Value="#ECEEF2"/>
-            <Setter Property="Foreground"      Value="#E8B000"/>
+            <Setter Property="Background"      Value="{StaticResource BrushSurfaceAlt}"/>
+            <Setter Property="Foreground"      Value="{StaticResource BrushAccentGold}"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Template">
                 <Setter.Value>
@@ -267,18 +395,55 @@
             </Setter>
         </Style>
 
+        <!-- ============ SCROLLBARS ============ -->
+
+        <Style x:Key="CleanScrollThumb" TargetType="Thumb">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Thumb">
+                        <Border Background="{StaticResource BrushBorderStrong}" CornerRadius="4" Margin="2"/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="ScrollBar">
+            <Setter Property="Width" Value="10"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ScrollBar">
+                        <Grid Background="Transparent">
+                            <Track x:Name="PART_Track" IsDirectionReversed="True">
+                                <Track.Thumb>
+                                    <Thumb Style="{StaticResource CleanScrollThumb}"/>
+                                </Track.Thumb>
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton Background="Transparent" BorderThickness="0" Width="0" Height="0"/>
+                                </Track.DecreaseRepeatButton>
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton Background="Transparent" BorderThickness="0" Width="0" Height="0"/>
+                                </Track.IncreaseRepeatButton>
+                            </Track>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
     </Window.Resources>
 
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="52"/>
-            <RowDefinition Height="42"/>
+            <RowDefinition Height="56"/>
+            <RowDefinition Height="44"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="26"/>
         </Grid.RowDefinitions>
 
         <!-- TOP BAR -->
-        <Border Grid.Row="0" Background="#FFFFFF" BorderBrush="#DDE0E8" BorderThickness="0,0,0,1">
+        <Border Grid.Row="0" Background="{StaticResource BrushSurface}"
+                BorderBrush="{StaticResource BrushBorder}" BorderThickness="0,0,0,1">
             <Grid Margin="20,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -287,18 +452,15 @@
                 </Grid.ColumnDefinitions>
 
                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Border Width="30" Height="30" CornerRadius="4" Background="#1A1D23" Margin="0,0,10,0">
-                        <TextBlock Text="P" Foreground="#E8B000" FontSize="16" FontWeight="Bold"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    </Border>
-                    <StackPanel VerticalAlignment="Center">
-                        <TextBlock Text="PixTech" Foreground="#1A1D23" FontSize="15" FontWeight="SemiBold"/>
-                        <TextBlock Text="OCR Studio" Foreground="#9098AA" FontSize="10"/>
-                    </StackPanel>
+                    <Image Source="Assets/logo.png" Height="34" Stretch="Uniform" Margin="0,0,12,0"/>
+                    <Border Width="1" Height="26" Background="{StaticResource BrushBorder}" Margin="0,0,12,0"/>
+                    <TextBlock Text="OCR Studio" Foreground="{StaticResource BrushTextSecondary}"
+                               FontSize="14" VerticalAlignment="Center"/>
                 </StackPanel>
 
-                <Border Grid.Column="1" Background="#F0F1F4" BorderBrush="#DDE0E8" BorderThickness="1"
-                        CornerRadius="4" Height="34" Width="290" HorizontalAlignment="Center" Padding="2">
+                <Border Grid.Column="1" Background="{StaticResource BrushSurfaceAlt}"
+                        BorderBrush="{StaticResource BrushBorder}" BorderThickness="1"
+                        CornerRadius="6" Height="34" Width="290" HorizontalAlignment="Center" Padding="2">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -315,20 +477,32 @@
                     </Grid>
                 </Border>
 
-                <Border Grid.Column="2" Background="#FEF9EC" BorderBrush="#F0C830" BorderThickness="1"
-                        CornerRadius="4" Padding="12,5" VerticalAlignment="Center">
+                <Border Grid.Column="2" Background="{StaticResource BrushAccentGoldSoft}"
+                        BorderBrush="{StaticResource BrushAccentGoldBorder}" BorderThickness="1"
+                        CornerRadius="6" Padding="12,5" VerticalAlignment="Center">
                     <TextBlock x:Name="txtMode" Text="INFERENCE MODE"
-                               Foreground="#7A5800" FontSize="10" FontWeight="Bold"/>
+                               Foreground="{StaticResource BrushAccentGoldText}" FontSize="10" FontWeight="Bold"/>
                 </Border>
             </Grid>
         </Border>
 
         <!-- TOOLBAR -->
-        <Border Grid.Row="1" Background="#F7F8FA" BorderBrush="#DDE0E8" BorderThickness="0,0,0,1">
+        <Border Grid.Row="1" Background="{StaticResource BrushBg}"
+        BorderBrush="{StaticResource BrushBorder}" BorderThickness="0,0,0,1">
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="20,0">
-                <Button x:Name="btnLoadFiles"  Content="Load Files"   Style="{StaticResource BtnGhost}" Click="LoadFiles_Click"  Margin="0,0,6,0" Padding="12,0"/>
-                <Button x:Name="btnLoadFolder" Content="Load Folder"  Style="{StaticResource BtnGhost}" Click="LoadFolder_Click" Margin="0,0,14,0" Padding="12,0"/>
-                <Border Width="1" Height="18" Background="#DDE0E8" Margin="0,0,14,0"/>
+                <Button x:Name="btnLoadFiles" Style="{StaticResource BtnGhost}" Click="LoadFiles_Click" Margin="0,0,8,0">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="📄" FontSize="13" Margin="0,0,7,0"/>
+                        <TextBlock Text="Load Files" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Button x:Name="btnLoadFolder" Style="{StaticResource BtnGhost}" Click="LoadFolder_Click" Margin="0,0,14,0">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="📁" FontSize="13" Margin="0,0,7,0"/>
+                        <TextBlock Text="Load Folder" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Border Width="1" Height="18" Background="{StaticResource BrushBorder}" Margin="0,0,14,0"/>
                 <Button x:Name="btnAnnotate"         Content="Annotate"       Style="{StaticResource BtnGhost}"   Click="Annotate_Click"         Visibility="Collapsed" IsEnabled="False" Margin="0,0,6,0"/>
                 <Button x:Name="btnCheckAnnotations" Content="Refresh"         Style="{StaticResource BtnGhost}"   Click="CheckAnnotations_Click" Visibility="Collapsed" Margin="0,0,6,0"/>
                 <Button x:Name="btnStartTraining"    Content="Start Training"  Style="{StaticResource BtnPrimary}" Click="StartTraining_Click"    Visibility="Collapsed" IsEnabled="False" Padding="16,0"/>
@@ -344,40 +518,53 @@
             </Grid.ColumnDefinitions>
 
             <!-- LEFT -->
-            <Border Grid.Column="0" Background="#FFFFFF" BorderBrush="#DDE0E8" BorderThickness="0,0,1,0">
+            <Border Grid.Column="0" Background="{StaticResource BrushSurface}"
+                    BorderBrush="{StaticResource BrushBorder}" BorderThickness="0,0,1,0">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="38"/>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="28"/>
                     </Grid.RowDefinitions>
-                    <Border Grid.Row="0" Background="#F7F8FA" BorderBrush="#DDE0E8" BorderThickness="0,0,0,1">
-                        <TextBlock Text="IMAGES" Foreground="#9098AA" FontSize="9" FontWeight="Bold"
+                    <Border Grid.Row="0" Background="{StaticResource BrushBg}"
+                            BorderBrush="{StaticResource BrushBorder}" BorderThickness="0,0,0,1">
+                        <TextBlock Text="IMAGES" Foreground="{StaticResource BrushTextMuted}" FontSize="9" FontWeight="Bold"
                                    VerticalAlignment="Center" Margin="14,0"/>
                     </Border>
                     <ListBox Grid.Row="1" x:Name="lstImages"
                              Style="{StaticResource LbClean}"
                              ItemContainerStyle="{StaticResource LbItem}"
                              SelectionChanged="ImageList_SelectionChanged"/>
-                    <Border Grid.Row="2" Background="#F7F8FA" BorderBrush="#DDE0E8" BorderThickness="0,1,0,0" Padding="14,0">
-                        <TextBlock x:Name="txtImageCount" Text="0 images" Foreground="#9098AA" FontSize="10" VerticalAlignment="Center"/>
+                    <Border Grid.Row="2" Background="{StaticResource BrushBg}"
+                            BorderBrush="{StaticResource BrushBorder}" BorderThickness="0,1,0,0" Padding="14,0">
+                        <TextBlock x:Name="txtImageCount" Text="0 images" Foreground="{StaticResource BrushTextMuted}" FontSize="10" VerticalAlignment="Center"/>
                     </Border>
                 </Grid>
             </Border>
 
             <!-- CENTER -->
-            <Border Grid.Column="1" Background="#ECEEF2">
+            <Border Grid.Column="1" Background="{StaticResource BrushSurfaceAlt}">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="38"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
-                    <Border Grid.Row="0" Background="#F7F8FA" BorderBrush="#DDE0E8" BorderThickness="0,0,0,1">
-                        <TextBlock Text="IMAGE DISPLAY" Foreground="#9098AA" FontSize="9" FontWeight="Bold"
-                                   VerticalAlignment="Center" Margin="14,0"/>
-
+                    <Border Grid.Row="0" Background="{StaticResource BrushBg}"
+                            BorderBrush="{StaticResource BrushBorder}" BorderThickness="0,0,0,1">
+                        <TextBlock Text="IMAGE DISPLAY" Foreground="{StaticResource BrushTextMuted}" FontSize="9" FontWeight="Bold"
+                                   VerticalAlignment="Center" Margin="14,0" RenderTransformOrigin="0.5,0.5">
+                            <TextBlock.RenderTransform>
+                                <TransformGroup>
+                                    <ScaleTransform/>
+                                    <SkewTransform/>
+                                    <RotateTransform Angle="-0.357"/>
+                                    <TranslateTransform/>
+                                </TransformGroup>
+                            </TextBlock.RenderTransform>
+                        </TextBlock>
                     </Border>
-                    <Grid Grid.Row="1" x:Name="imageContainer">
+                    <Grid Grid.Row="1" x:Name="imageContainer" Cursor="Hand" MouseLeftButtonDown="ImageContainer_MouseLeftButtonDown">
+
                         <Image x:Name="imgDisplay" Stretch="Uniform" StretchDirection="Both"
                                RenderOptions.BitmapScalingMode="HighQuality"
                                SizeChanged="ImgDisplay_SizeChanged"/>
@@ -388,61 +575,58 @@
                                 MouseLeftButtonUp="AnnotationCanvas_MouseUp"/>
                         <StackPanel x:Name="txtPlaceholder" HorizontalAlignment="Center" VerticalAlignment="Center">
                             <TextBlock Text="📂" FontSize="40" HorizontalAlignment="Center"
-                                       Foreground="#C8CCD8" Margin="0,0,0,14"/>
-                            <TextBlock Text="Load images to begin" Foreground="#9098AA" FontSize="14"
+                                       Foreground="{StaticResource BrushBorderStrong}" Margin="0,0,0,14"/>
+                            <TextBlock Text="Load images to begin" Foreground="{StaticResource BrushTextMuted}" FontSize="14"
                                        HorizontalAlignment="Center" Margin="0,0,0,6"/>
-                            <TextBlock Text="PNG  ·  JPG  ·  BMP" Foreground="#C8CCD8" FontSize="11"
+                            <TextBlock Text="PNG  ·  JPG  ·  BMP" Foreground="{StaticResource BrushBorderStrong}" FontSize="11"
                                        HorizontalAlignment="Center"/>
                         </StackPanel>
                     </Grid>
                 </Grid>
             </Border>
 
-            <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Right"
-                          VerticalAlignment="Stretch" Background="#DDE0E8"
-                          ResizeDirection="Columns" ResizeBehavior="CurrentAndNext"/>
-
             <!-- RIGHT -->
-            <Border Grid.Column="2" Background="#FFFFFF" BorderBrush="#DDE0E8" BorderThickness="1,0,0,0">
+            <Border Grid.Column="2" Background="{StaticResource BrushSurface}"
+                    BorderBrush="{StaticResource BrushBorder}" BorderThickness="1,0,0,0">
                 <Grid>
 
                     <!-- TRAINING PANEL -->
                     <ScrollViewer x:Name="pnlTraining" Visibility="Collapsed"
                                   VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                         <StackPanel Margin="16,16,16,20">
-                            <TextBlock Text="TRAINING SETUP" Foreground="#9098AA" FontSize="9"
+                            <TextBlock Text="TRAINING SETUP" Foreground="{StaticResource BrushTextMuted}" FontSize="9"
                                        FontWeight="Bold" Margin="0,0,0,14"/>
-                            <Border Background="#FEF9EC" BorderBrush="#F0C830" BorderThickness="1"
-                                    CornerRadius="4" Padding="12,10" Margin="0,0,0,12">
+                            <Border Background="{StaticResource BrushAccentGoldSoft}" BorderBrush="{StaticResource BrushAccentGoldBorder}" BorderThickness="1"
+                                    CornerRadius="6" Padding="12,10" Margin="0,0,0,12" Effect="{StaticResource CardShadow}">
                                 <StackPanel>
-                                    <TextBlock Text="ANNOTATION STATUS" Foreground="#9098AA" FontSize="9"
+                                    <TextBlock Text="ANNOTATION STATUS" Foreground="{StaticResource BrushTextMuted}" FontSize="9"
                                                FontWeight="Bold" Margin="0,0,0,5"/>
                                     <TextBlock x:Name="txtAnnotationStatus" Text="No annotations yet"
-                                               Foreground="#D63B3B" FontSize="12" TextWrapping="Wrap"/>
+                                               Foreground="{StaticResource BrushDanger}" FontSize="12" TextWrapping="Wrap"/>
                                 </StackPanel>
                             </Border>
                             <Button x:Name="btnStartTrainingBig" Content="Start Training"
                                     Style="{StaticResource BtnGreen}" Click="StartTraining_Click"
                                     IsEnabled="False" HorizontalAlignment="Stretch" Margin="0,0,0,12"/>
-                            <Border Background="#F7F8FA" BorderBrush="#DDE0E8" BorderThickness="1"
-                                    CornerRadius="4" Padding="12,10" Margin="0,0,0,16">
+                            <Border Background="{StaticResource BrushBg}" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1"
+                                    CornerRadius="6" Padding="12,10" Margin="0,0,0,16">
                                 <StackPanel>
                                     <TextBlock x:Name="txtTrainingStatus" Text="Ready"
-                                               Foreground="#9098AA" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,7"/>
+                                               Foreground="{StaticResource BrushTextMuted}" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,7"/>
                                     <ProgressBar x:Name="progressBarTraining" Value="0" Style="{StaticResource PbAmber}"/>
                                 </StackPanel>
                             </Border>
-                            <Border Height="1" Background="#DDE0E8" Margin="0,0,0,14"/>
-                            <TextBlock Text="ANNOTATION TOOLS" Foreground="#9098AA" FontSize="9" FontWeight="Bold" Margin="0,0,0,10"/>
-                           
-                            <Border Height="1" Background="#DDE0E8" Margin="0,14"/>
-                            <TextBlock Text="TRAINING PARAMETERS" Foreground="#9098AA" FontSize="9" FontWeight="Bold" Margin="0,0,0,12"/>
+                            <Border Height="1" Background="{StaticResource BrushBorder}" Margin="0,0,0,14"/>
+                            <TextBlock Text="ANNOTATION TOOLS" Foreground="{StaticResource BrushTextMuted}" FontSize="9" FontWeight="Bold" Margin="0,0,0,10"/>
+
+                            <Border Height="1" Background="{StaticResource BrushBorder}" Margin="0,14"/>
+                            <TextBlock Text="TRAINING PARAMETERS" Foreground="{StaticResource BrushTextMuted}" FontSize="9" FontWeight="Bold" Margin="0,0,0,12"/>
                             <Grid Margin="0,0,0,8">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="80"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="Epochs" Foreground="#5A6070" FontSize="12" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="0" Text="Epochs" Foreground="{StaticResource BrushTextSecondary}" FontSize="12" VerticalAlignment="Center"/>
                                 <TextBox   Grid.Column="1" x:Name="txtEpochs" Text="50" Style="{StaticResource TxtClean}" Height="30"/>
                             </Grid>
                             <Grid Margin="0,0,0,16">
@@ -450,11 +634,11 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="80"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="Batch Size" Foreground="#5A6070" FontSize="12" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="0" Text="Batch Size" Foreground="{StaticResource BrushTextSecondary}" FontSize="12" VerticalAlignment="Center"/>
                                 <TextBox   Grid.Column="1" x:Name="txtBatchSize" Text="32" Style="{StaticResource TxtClean}" Height="30"/>
                             </Grid>
-                            <Border Height="1" Background="#DDE0E8" Margin="0,0,0,14"/>
-                            <TextBlock Text="MODEL" Foreground="#9098AA" FontSize="9" FontWeight="Bold" Margin="0,0,0,10"/>
+                            <Border Height="1" Background="{StaticResource BrushBorder}" Margin="0,0,0,14"/>
+                            <TextBlock Text="MODEL" Foreground="{StaticResource BrushTextMuted}" FontSize="9" FontWeight="Bold" Margin="0,0,0,10"/>
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
@@ -471,40 +655,41 @@
                     <ScrollViewer x:Name="pnlInference" Visibility="Visible"
                                   VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                         <StackPanel Margin="16,16,16,20">
-                            <TextBlock Text="OCR INFERENCE" Foreground="#9098AA" FontSize="9"
+                            <TextBlock Text="OCR INFERENCE" Foreground="{StaticResource BrushTextMuted}" FontSize="9"
                                        FontWeight="Bold" Margin="0,0,0,14"/>
                             <Button x:Name="btnRunInference" Content="Run OCR on Image"
                                     Style="{StaticResource BtnPrimary}" Click="RunInference_Click"
                                     HorizontalAlignment="Stretch" Height="40" FontSize="13" Margin="0,0,0,10"/>
                             <ProgressBar x:Name="progressBar" Value="0" Style="{StaticResource PbAmber}" Margin="0,0,0,5"/>
-                            <TextBlock x:Name="txtStatus" Text="Ready" Foreground="#9098AA" FontSize="11" Margin="0,0,0,14"/>
-                            <Border Height="1" Background="#DDE0E8" Margin="0,0,0,14"/>
-                            <TextBlock Text="RESULT" Foreground="#9098AA" FontSize="9" FontWeight="Bold" Margin="0,0,0,10"/>
-                            <Border Background="#F7F8FA" BorderBrush="#DDE0E8" BorderThickness="1"
-                                    CornerRadius="4" Padding="14" Margin="0,0,0,8" MinHeight="64">
+                            <TextBlock x:Name="txtStatus" Text="Ready" Foreground="{StaticResource BrushTextMuted}" FontSize="11" Margin="0,0,0,14" Height="15"/>
+                            <Border Height="1" Background="{StaticResource BrushBorder}" Margin="0,0,0,14"/>
+                            <TextBlock Text="RESULT" Foreground="{StaticResource BrushTextMuted}" FontSize="9" FontWeight="Bold" Margin="0,0,0,10"/>
+                            <Border Background="{StaticResource BrushBg}" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1"
+                                    CornerRadius="6" Padding="14" Margin="0,0,0,8" MinHeight="64" Effect="{StaticResource CardShadow}">
                                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" MaxHeight="180">
-                                    <TextBox x:Name="txtResult" Text="—" Foreground="#1A1D23"
+                                    <TextBox x:Name="txtResult" Text="—" Foreground="{StaticResource BrushTextPrimary}"
                                              Background="Transparent" BorderThickness="0"
+                                             SelectionBrush="{StaticResource BrushAccentGold}" SelectionOpacity="0.35"
                                              IsReadOnly="False" TextWrapping="Wrap"
                                              FontSize="28" FontWeight="SemiBold" FontFamily="Consolas"
                                              HorizontalAlignment="Stretch"/>
                                 </ScrollViewer>
                             </Border>
-                            <Border Background="#F7F8FA" BorderBrush="#DDE0E8" BorderThickness="1"
-                                    CornerRadius="4" Padding="12,9" Margin="0,0,0,14">
+                            <Border Background="{StaticResource BrushBg}" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1"
+                                    CornerRadius="6" Padding="12,9" Margin="0,0,0,14">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     <TextBlock x:Name="txtConfidence" Text="Confidence: —"
-                                               Foreground="#5A6070" FontSize="12" VerticalAlignment="Center"/>
+                                               Foreground="{StaticResource BrushTextSecondary}" FontSize="12" VerticalAlignment="Center"/>
                                     <TextBlock Grid.Column="1" x:Name="txtDecision" Text="—"
-                                               Foreground="#9098AA" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                               Foreground="{StaticResource BrushTextMuted}" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
                                 </Grid>
                             </Border>
-                            <Border Height="1" Background="#DDE0E8" Margin="0,0,0,14"/>
-                            <TextBlock Text="DECISION" Foreground="#9098AA" FontSize="9" FontWeight="Bold" Margin="0,0,0,10"/>
+                            <Border Height="1" Background="{StaticResource BrushBorder}" Margin="0,0,0,14"/>
+                            <TextBlock Text="DECISION" Foreground="{StaticResource BrushTextMuted}" FontSize="9" FontWeight="Bold" Margin="0,0,0,10"/>
                             <Grid Margin="0,0,0,14">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
@@ -512,41 +697,13 @@
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 <Button Grid.Column="0" Content="Accept" Click="Accept_Click"
-                                        Height="36" FontSize="12" FontWeight="SemiBold" Cursor="Hand"
-                                        Background="#18A058" Foreground="White" BorderThickness="0">
-                                    <Button.Template>
-                                        <ControlTemplate TargetType="Button">
-                                            <Border x:Name="bd" Background="{TemplateBinding Background}" CornerRadius="4">
-                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                            </Border>
-                                            <ControlTemplate.Triggers>
-                                                <Trigger Property="IsMouseOver" Value="True">
-                                                    <Setter TargetName="bd" Property="Background" Value="#14834A"/>
-                                                </Trigger>
-                                            </ControlTemplate.Triggers>
-                                        </ControlTemplate>
-                                    </Button.Template>
-                                </Button>
+                                        Style="{StaticResource BtnAccept}" Height="36"/>
                                 <Button Grid.Column="2" Content="Reject" Click="Reject_Click"
-                                        Height="36" FontSize="12" FontWeight="SemiBold" Cursor="Hand"
-                                        Background="#D63B3B" Foreground="White" BorderThickness="0">
-                                    <Button.Template>
-                                        <ControlTemplate TargetType="Button">
-                                            <Border x:Name="bd" Background="{TemplateBinding Background}" CornerRadius="4">
-                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                            </Border>
-                                            <ControlTemplate.Triggers>
-                                                <Trigger Property="IsMouseOver" Value="True">
-                                                    <Setter TargetName="bd" Property="Background" Value="#B83030"/>
-                                                </Trigger>
-                                            </ControlTemplate.Triggers>
-                                        </ControlTemplate>
-                                    </Button.Template>
-                                </Button>
+                                        Style="{StaticResource BtnReject}" Height="36"/>
                             </Grid>
-                            <Border Height="1" Background="#DDE0E8" Margin="0,0,0,14"/>
-                            <TextBlock Text="MODEL" Foreground="#9098AA" FontSize="9" FontWeight="Bold" Margin="0,0,0,10"/>
-                            <Grid>
+                            <Border Height="1" Background="{StaticResource BrushBorder}" Margin="0,0,0,14"/>
+                            <TextBlock Text="MODEL" Foreground="{StaticResource BrushTextMuted}" FontSize="9" FontWeight="Bold" Margin="0,0,0,10"/>
+                            <Grid Margin="0,0,0,8">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="8"/>
@@ -557,12 +714,11 @@
                             </Grid>
                             <Grid>
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="130*"/>
+                                    <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="8"/>
-                                    <ColumnDefinition Width="41*"/>
-                                    <ColumnDefinition Width="89*"/>
+                                    <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <Button Grid.Column="2" Content="Grab" Style="{StaticResource BtnGhost}" Click="Grab_Click" Height="30" FontSize="12" Grid.ColumnSpan="2"/>
+                                <Button Grid.Column="2" Content="Grab" Style="{StaticResource BtnGhost}" Click="Grab_Click" Height="30" FontSize="12"/>
                             </Grid>
                         </StackPanel>
                     </ScrollViewer>
@@ -572,18 +728,18 @@
         </Grid>
 
         <!-- STATUS BAR -->
-        <Border Grid.Row="3" Background="#F7F8FA" BorderBrush="#DDE0E8" BorderThickness="0,1,0,0">
+        <Border Grid.Row="3" Background="{StaticResource BrushBg}"
+                BorderBrush="{StaticResource BrushBorder}" BorderThickness="0,1,0,0">
             <Grid Margin="16,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <Ellipse Width="5" Height="2
-" Fill="#18A058" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                    <TextBlock x:Name="txtStatusBar" Text="Ready" Foreground="#9098AA" FontSize="11" VerticalAlignment="Center"/>
+                    <Ellipse Width="7" Height="7" Fill="{StaticResource BrushSuccess}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                    <TextBlock x:Name="txtStatusBar" Text="Ready" Foreground="{StaticResource BrushTextMuted}" FontSize="11" VerticalAlignment="Center"/>
                 </StackPanel>
-                <TextBlock Grid.Column="1" Text="PixTech DLS v2.0" Foreground="#C8CCD8" FontSize="10" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="1" Text="PixTech DLS v2.0" Foreground="{StaticResource BrushBorderStrong}" FontSize="10" VerticalAlignment="Center"/>
             </Grid>
         </Border>
     </Grid>
