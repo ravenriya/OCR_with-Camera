@@ -1597,7 +1597,7 @@ namespace PixtechApplication
             if (!File.Exists(master))
             {
                 txtAnnotationStatus.Text = " No annotations yet"; txtAnnotationStatus.Foreground = new SolidColorBrush(Colors.Red);
-                btnStartTraining.IsEnabled = false; if (btnStartTrainingBig != null) btnStartTrainingBig.IsEnabled = false; return;
+                 if (btnStartTrainingBig != null) btnStartTrainingBig.IsEnabled = false; return;
             }
             try
             {
@@ -1606,12 +1606,12 @@ namespace PixtechApplication
                 {
                     txtAnnotationStatus.Text = $" {a.Count} annotations\n{a.Select(x => x.ImagePath).Distinct().Count()} images | {a.Select(x => x.Label).Distinct().Count()} unique chars";
                     txtAnnotationStatus.Foreground = new SolidColorBrush(Colors.Green);
-                    btnStartTraining.IsEnabled = true; if (btnStartTrainingBig != null) btnStartTrainingBig.IsEnabled = true;
+                     if (btnStartTrainingBig != null) btnStartTrainingBig.IsEnabled = true;
                 }
                 else
                 {
                     txtAnnotationStatus.Text = " No annotations yet"; txtAnnotationStatus.Foreground = new SolidColorBrush(Colors.Orange);
-                    btnStartTraining.IsEnabled = false; if (btnStartTrainingBig != null) btnStartTrainingBig.IsEnabled = false;
+                    if (btnStartTrainingBig != null) btnStartTrainingBig.IsEnabled = false;
                 }
             }
             catch { txtAnnotationStatus.Text = " Error reading annotations"; }
@@ -1777,7 +1777,7 @@ namespace PixtechApplication
             {
                 txtMode.Text = "TRAINING MODE"; txtMode.Foreground = new SolidColorBrush(WpfColor.FromRgb(22, 163, 74));
                 pnlInference.Visibility = Visibility.Collapsed; pnlTraining.Visibility = Visibility.Visible;
-                btnAnnotate.Visibility = Visibility.Visible; btnStartTraining.Visibility = Visibility.Visible; btnCheckAnnotations.Visibility = Visibility.Visible;
+                btnAnnotate.Visibility = Visibility.Visible; btnCheckAnnotations.Visibility = Visibility.Visible;
                 btnAnnotate.IsEnabled = imageFiles.Count > 0;
                 if (imgDisplay.Source != null)
                 {
@@ -1788,7 +1788,7 @@ namespace PixtechApplication
                     EnableRoiEditing();
                     EnsureTemplate();
                 }
-                UpdateAnnotationStatus(); if (CheckAnnotationsExist()) btnStartTraining.IsEnabled = true;
+                UpdateAnnotationStatus(); if (CheckAnnotationsExist() && btnStartTrainingBig != null) btnStartTrainingBig.IsEnabled = true;
                 txtStatusBar.Text = $"User: {currentUser} | Mode: Training | Project: {currentProjectName}";
             }
             else
@@ -1802,7 +1802,7 @@ namespace PixtechApplication
                 LoadRoisForCurrentImage();
                 annotationCanvas.Visibility = roiRegions.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
 
-                btnAnnotate.IsEnabled = btnStartTraining.IsEnabled = false;
+                btnAnnotate.IsEnabled = false;
                 txtStatusBar.Text = HasTrainedModel() ? $"User: {currentUser} | Mode: Inference (Model Loaded) | Project: {currentProjectName}" : $"User: {currentUser} | Mode: Inference (No Model) | Project: {currentProjectName}";
             }
         }
@@ -1966,7 +1966,7 @@ namespace PixtechApplication
             if (!File.Exists(trainScript)) { MessageBox.Show("train_last_layer.py not found"); return; }
             if (!File.Exists(annoFile)) { MessageBox.Show("No annotations found!"); return; }
             ClearTrainedModel(); Directory.CreateDirectory(modelDir);
-            btnStartTraining.IsEnabled = false; if (btnStartTrainingBig != null) btnStartTrainingBig.IsEnabled = false;
+             if (btnStartTrainingBig != null) btnStartTrainingBig.IsEnabled = false;
             progressBarTraining.Value = 0; txtTrainingStatus.Text = "Starting...";
             var errs = new System.Text.StringBuilder();
 
@@ -2013,7 +2013,7 @@ namespace PixtechApplication
                 });
             }
             catch (Exception ex) { MessageBox.Show($"Error: {ex.Message}"); }
-            finally { btnStartTraining.IsEnabled = true; if (btnStartTrainingBig != null) btnStartTrainingBig.IsEnabled = true; }
+            finally {  if (btnStartTrainingBig != null) btnStartTrainingBig.IsEnabled = true; }
         }
         private Mat currentCameraImage = null;
         private string currentImagePath = null;
